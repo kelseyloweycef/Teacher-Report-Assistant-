@@ -163,14 +163,12 @@
             const [newSubjectName, setNewSubjectName] = useState("");
             const [newSubjectType, setNewSubjectType] = useState('full');
             
-            // State for optional categories (Year 9 / Shared)
             const [selectedOptionals, setSelectedOptionals] = useState({
                 "HPL": false,
                 "Language": false,
                 "Homework": false
             });
 
-            // Reset optional selection when subject changes
             useEffect(() => {
                 setSelectedOptionals({ "HPL": false, "Language": false, "Homework": false });
             }, [subject]);
@@ -182,22 +180,18 @@
                     return;
                 }
                 
-                // Build the category list based on logic
                 let finalCategories = [];
-                const isYear9 = subject.includes("Year 9") || newSubjectType === 'shared'; // Assuming 'shared' logic applies to Year 9 structure
+                const isYear9 = subject.includes("Year 9") || newSubjectType === 'shared';
 
                 if (reportPeriod === "Mocks") {
                     finalCategories = mockTitles[subject]?.map((t, i) => ({ id: `Mock${i + 1}`, label: t.trim() })).filter(c => c.label.length > 0) || [];
                 } else if (isYear9) {
-                    // COMPULSORY FIRST
                     finalCategories.push({id: "Assessment", label: "Assessment"});
                     finalCategories.push({id: "Improvement", label: "Improvement"});
-                    // OPTIONAL NEXT
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "HPL"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
                     if (selectedOptionals["Homework"]) finalCategories.push({id: "Homework", label: "Homework"});
                 } else {
-                    // Default Structure for other years
                     finalCategories = [
                         {id: "HPL", label: "HPL"},
                         {id: "Language", label: "Language"},
@@ -225,7 +219,6 @@
                 <div className="bg-white rounded-xl shadow-lg p-8 border-t-4 border-school-lightBlue animate-in">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">Class Setup</h2>
                     <div className="grid grid-cols-1 gap-8">
-                        {/* 1. SUBJECT SELECTION */}
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                 <Library className="w-4 h-4 text-school-lightBlue" /> 1. Select Subject (Shared Bank)
@@ -263,7 +256,6 @@
                             )}
                         </div>
 
-                        {/* 2. REPORT PERIOD */}
                         <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                 <Calendar className="w-4 h-4 text-school-lightBlue" /> 2. Select Report Period
@@ -274,7 +266,6 @@
                                 ))}
                             </div>
                             
-                            {/* MOCKS CONFIG */}
                             {reportPeriod === "Mocks" && (
                                 <div className="bg-red-50 border border-red-100 rounded-lg p-4 mt-2">
                                     <h3 className="text-school-red font-bold text-sm mb-2">Configure Mock Categories (Shared)</h3>
@@ -286,7 +277,6 @@
                                 </div>
                             )}
 
-                            {/* YEAR 9 CONFIGURATION */}
                             {isYear9Config && reportPeriod !== "Mocks" && (
                                 <div className="bg-blue-50 border border-school-lightBlue/30 rounded-lg p-5 mt-4">
                                     <div className="flex items-center gap-2 mb-3">
@@ -296,7 +286,6 @@
                                     <p className="text-sm text-gray-600 mb-4">Assessment and Improvement are compulsory. Please select at least one optional category.</p>
                                     
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {/* COMPULSORY */}
                                         <label className="flex items-center gap-3 p-3 bg-gray-200 rounded-lg border border-gray-300 cursor-not-allowed opacity-70">
                                             <div className="w-5 h-5 bg-school-lightBlue text-white rounded flex items-center justify-center"><Check className="w-3 h-3"/></div>
                                             <span className="font-bold text-gray-700">Assessment (Compulsory)</span>
@@ -306,7 +295,6 @@
                                             <span className="font-bold text-gray-700">Improvement (Compulsory)</span>
                                         </label>
 
-                                        {/* OPTIONAL */}
                                         {["HPL", "Language", "Homework"].map(opt => (
                                             <label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedOptionals[opt] ? 'bg-white border-school-lightBlue shadow-sm' : 'bg-gray-50 border-transparent hover:bg-white'}`}>
                                                 <input 
@@ -323,7 +311,6 @@
                             )}
                         </div>
 
-                        {/* 3. STUDENTS */}
                         <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                 <Users className="w-4 h-4 text-school-lightBlue" /> 3. Enter Student Names (Your Session Only)
@@ -394,7 +381,6 @@
                                 </div>
                              </div>
 
-                             {/* ADD NEW INPUT */}
                              {isAdding && (
                                 <div className="flex gap-2">
                                     <input 
@@ -409,7 +395,6 @@
                                 </div>
                              )}
 
-                             {/* MANAGE MODE (List View) */}
                              {isManaging && (
                                 <div className="bg-gray-50 border rounded-lg p-2 max-h-48 overflow-y-auto custom-scrollbar">
                                     {activeOptions.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No comments yet.</p>}
@@ -440,7 +425,6 @@
                                 </div>
                              )}
 
-                             {/* SELECTION DROPDOWN (Normal Mode) */}
                              {!isManaging && (
                                 <div className="relative">
                                     <select 
@@ -448,7 +432,6 @@
                                         onChange={(e) => {
                                             const newVal = e.target.value;
                                             onChange(currentValue ? currentValue + " " + newVal : newVal);
-                                            // value reset handled by component re-render with value=""
                                         }}
                                         value="" 
                                     >
@@ -471,7 +454,6 @@
                         placeholder="Selected comments appear here..."
                     ></textarea>
                     
-                    {/* Clear Button */}
                     <div className="flex justify-end mt-1">
                         <button 
                             onClick={() => onChange("")} 
@@ -497,14 +479,12 @@
                         <h2 className="text-xl font-bold text-school-blue">Category: {category.label}</h2>
                         
                         <div className="flex gap-2">
-                            {/* Update All Subjects Button (Purple) */}
                             {isHPLOrLang && (
                                 <button onClick={onShareGlobal} className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white text-xs font-bold rounded shadow hover:bg-purple-700 transition">
                                     <Globe className="w-4 h-4"/> Update All Subjects
                                 </button>
                             )}
 
-                            {/* Share with P3 Button (Indigo) */}
                             {!isHPLOrLang && reportPeriod !== "Progress 3" && reportPeriod !== "Mocks" && (
                                 <button onClick={onShareP3} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded shadow hover:bg-indigo-700 transition">
                                     <Share className="w-4 h-4"/> Share with P3 Bank
@@ -540,6 +520,7 @@
         };
 
         const ResultPanel = ({ prompt }) => {
+            
             const handleDownload = () => {
                 const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Class Reports</title></head><body>";
                 const footer = "</body></html>";
@@ -559,8 +540,11 @@
                     <div className="p-4 border-b bg-gray-50 font-bold text-gray-700 flex justify-between items-center">
                         <span>Generated Class Report Document</span>
                         <div className="flex gap-2">
-                            <button onClick={handleDownload} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs font-bold">
-                                <Icon className="w-4 h-4" path={<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>} /> Download as Word Doc
+                            <button 
+                                onClick={handleDownload}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs font-bold"
+                            >
+                                <Download className="w-4 h-4" /> Download as Word Doc
                             </button>
                         </div>
                     </div>
