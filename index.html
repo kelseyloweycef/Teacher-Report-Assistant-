@@ -82,6 +82,8 @@
         const Pencil = ({ className }) => <Icon className={className} path={<><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></>} />;
         const Save = ({ className }) => <Icon className={className} path={<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>} />;
         const X = ({ className }) => <Icon className={className} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />;
+        const Download = ({ className }) => <Icon className={className} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>} />;
+        const Copy = ({ className }) => <Icon className={className} path={<><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>} />;
 
         const DEFAULT_COMMENT_BANK = {
             "IB History": {
@@ -366,7 +368,7 @@
                                 </div>
                              )}
 
-                             {/* SELECTION DROPDOWN (Normal Mode) - Auto Reset */}
+                             {/* SELECTION DROPDOWN (Normal Mode) */}
                              {!isManaging && (
                                 <div className="relative">
                                     <select 
@@ -376,7 +378,7 @@
                                             onChange(currentValue ? currentValue + " " + newVal : newVal);
                                             // Ensure value resets visually (controlled component via value="")
                                         }}
-                                        value="" // Controlled to always reset
+                                        value="" 
                                     >
                                         <option value="" disabled>▼ Select a comment to add...</option>
                                         {activeOptions.length === 0 && <option disabled>No comments available</option>}
@@ -466,9 +468,38 @@
         };
 
         const ResultPanel = ({ prompt }) => {
+            
+            const handleDownload = () => {
+                // Basic HTML wrapper for Word compatibility
+                const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Class Reports</title></head><body>";
+                const footer = "</body></html>";
+                
+                // Convert text \n to <br> for HTML
+                const htmlContent = prompt.replace(/\n/g, "<br>");
+                const sourceHTML = header + htmlContent + footer;
+                
+                const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+                const fileDownload = document.createElement("a");
+                document.body.appendChild(fileDownload);
+                fileDownload.href = source;
+                fileDownload.download = 'Class_Reports.doc';
+                fileDownload.click();
+                document.body.removeChild(fileDownload);
+            };
+
             return (
                 <div className="mt-8 bg-white rounded-xl shadow-xl overflow-hidden border border-gray-200">
-                    <div className="p-4 border-b bg-gray-50 font-bold text-gray-700">Generated Class Report Document</div>
+                    <div className="p-4 border-b bg-gray-50 font-bold text-gray-700 flex justify-between items-center">
+                        <span>Generated Class Report Document</span>
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={handleDownload}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs font-bold"
+                            >
+                                <Download className="w-4 h-4" /> Download as Word Doc
+                            </button>
+                        </div>
+                    </div>
                     <textarea readOnly value={prompt} className="w-full min-h-[500px] p-6 bg-gray-50 resize-y font-mono text-sm border-none" />
                 </div>
             );
