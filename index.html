@@ -473,7 +473,6 @@
             const getBankKey = (catId) => (catId === 'HPL' || catId === 'Language') ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
 
             const handleAddCustomComment = (level, text) => {
-                // Determine Category from current step
                 const catId = categories[currentStepIndex].id;
                 const key = getBankKey(catId);
                 const newBank = JSON.parse(JSON.stringify(customBank)); 
@@ -569,7 +568,7 @@
                 levels.forEach(l => {
                     const defaults = DEFAULT_COMMENT_BANK[subject]?.[catId]?.[l] || [];
                     const customs = customBank[key]?.[catId]?.[l] || [];
-                    map[l] = Array.from(new Set([...defaults, ...customs]));
+                    map[l] = [...defaults, ...customs];
                 });
                 return map;
             };
