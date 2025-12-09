@@ -76,12 +76,22 @@
         const Camera = ({ className }) => <Icon className={className} path={<><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></>} />;
         const Globe = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></>} />;
         const Share = ({ className }) => <Icon className={className} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></>} />;
+        const RotateCcw = ({ className }) => <Icon className={className} path={<><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></>} />;
+
+        const DEFAULT_COMMENT_BANK = {
+            "IB History": {
+                "HPL": { "Collaboration/Empathy": [], "Agile": [], "Hard Working": [] },
+                "Language": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                "Assessment": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                "Homework": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                "Improvement": { "Excellent": [], "Good": [], "Average": [], "Poor": [] }
+            }
+        };
 
         // --- COMPONENTS ---
 
         const Header = ({ isConnected }) => {
-            const DEFAULT_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAbFBMVEX///8Amf8AlP8Alv8Alf8Alf8Alv8Alf8Alv8Alv8AmP8Alv8Alf8Alv8Alv8Alv8Alf8Alv8Alf8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv98W13UAAAIGElEQVR4nO2da3uqOhCGRQXkIiJ4QcW2ttb+/5/4mAnJTYIkA4rtvT7vD61FA5NJJpNkxkwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGP5/6C8X/W0f4fs47/t+3w/8Yd/3/aHv+4Hze9uH+h6a9h+Xy+V6vV4ul8v1et1f2z7Y99Bf2z7M93G5Xq/76/V6uV6v++v1erleb/sI38nlcrnebvvr9Xq5Xm/76/VyuV6vtxv/5XK9Xm/X6+V6vV6v1+v1cr1eb9fr5Xq9Xm/X6+V6vV6v1+vler1eb9fr5Xq9Xm/X6+V6vV6v1+v1er1erter1Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr";
-            
+            const DEFAULT_LOGO = "https://cdn-icons-png.flaticon.com/512/3665/3665939.png"; 
             const [logo, setLogo] = useState(DEFAULT_LOGO);
             const fileInputRef = useRef(null);
 
@@ -112,8 +122,7 @@
                             onClick={() => fileInputRef.current?.click()}
                             title="Click to change logo"
                         >
-                            <img src={logo} className="h-16 w-auto min-w-[64px] object-contain max-w-[200px]" alt="School Logo" />
-                            {/* Logo Hover Overlay */}
+                            <img src={logo} className="h-16 w-16 object-contain" alt="School Logo" />
                             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Camera className="w-6 h-6 text-white mb-1" />
                                 <span className="text-[10px] font-bold text-white uppercase">Change</span>
@@ -251,7 +260,7 @@
 
             const handleSaveNewComment = () => {
                 if (newComment.trim() && activeLevel) {
-                    onAddComment(newComment.trim(), activeLevel);
+                    onAddComment(activeLevel, newComment.trim());
                     setNewComment("");
                     setIsAdding(false);
                 }
@@ -280,7 +289,14 @@
 
                              {isAdding && (
                                 <div className="flex gap-2">
-                                    <input type="text" value={newComment} onChange={(e)=>setNewText(e.target.value)} className="flex-1 border p-1 rounded text-sm" placeholder="Type shared comment..." autoFocus />
+                                    <input 
+                                        type="text" 
+                                        value={newComment} 
+                                        onChange={(e) => setNewComment(e.target.value)} 
+                                        className="flex-1 border p-1 rounded text-sm" 
+                                        placeholder="Type shared comment..." 
+                                        autoFocus 
+                                    />
                                     <button onClick={handleSaveNewComment} className="bg-green-600 text-white px-2 rounded text-xs">Save</button>
                                 </div>
                              )}
@@ -368,12 +384,19 @@
             );
         };
 
-        const ActionPanel = ({ onBack, onNext, isLastStep }) => (
+        const ActionPanel = ({ onBack, onNext, onReturnStart, isLastStep }) => (
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-50">
                 <div className="max-w-5xl mx-auto flex justify-between gap-4">
-                    <button onClick={onBack} className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
-                        <ArrowLeft className="w-5 h-5" /> Back
-                    </button>
+                    <div className="flex gap-2">
+                        {/* RETURN TO START BUTTON */}
+                        <button onClick={onReturnStart} className="flex items-center gap-2 px-4 py-3 rounded-lg font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors text-sm">
+                            <RotateCcw className="w-4 h-4" /> Return to Start
+                        </button>
+                        
+                        <button onClick={onBack} className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition-colors">
+                            <ArrowLeft className="w-5 h-5" /> Back
+                        </button>
+                    </div>
                     <button onClick={onNext} className={`flex items-center gap-2 px-8 py-3 rounded-lg font-bold text-white shadow-md ${isLastStep ? 'bg-green-600 hover:bg-green-700' : 'bg-school-lightBlue hover:bg-school-blue'}`}>
                         {isLastStep ? <><CheckCircle className="w-5 h-5" /> Finish & Generate</> : <><ArrowRight className="w-5 h-5" /> Next Category</>}
                     </button>
@@ -457,7 +480,8 @@
 
             const getBankKey = (catId) => (catId === 'HPL' || catId === 'Language') ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
 
-            const handleAddCustomComment = (catId, text, level) => {
+            const handleAddCustomComment = (level, text) => {
+                const catId = categories[currentStepIndex].id;
                 const key = getBankKey(catId);
                 const newBank = JSON.parse(JSON.stringify(customBank)); 
                 
@@ -550,8 +574,9 @@
                 const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
                 const map = {};
                 levels.forEach(l => {
+                    const defaults = DEFAULT_COMMENT_BANK[subject]?.[catId]?.[l] || [];
                     const customs = customBank[key]?.[catId]?.[l] || [];
-                    map[l] = [...customs];
+                    map[l] = Array.from(new Set([...defaults, ...customs]));
                 });
                 return map;
             };
@@ -619,6 +644,14 @@
                     {!isSetup && !isResultStep && (
                         <ActionPanel
                             onBack={() => setCurrentStepIndex(currentStepIndex - 1)}
+                            onReturnStart={() => {
+                                if(confirm("Return to start? Current student progress will be lost.")) {
+                                    setStudents([]);
+                                    setSubject("");
+                                    setCurrentStepIndex(0);
+                                    setClassData({});
+                                }
+                            }}
                             onNext={() => {
                                 if (currentStepIndex === categories.length - 1) generateFinalBatch();
                                 setCurrentStepIndex(currentStepIndex + 1);
