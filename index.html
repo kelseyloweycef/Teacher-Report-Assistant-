@@ -212,10 +212,12 @@
                                             <option value="__NEW__" className="font-bold text-school-lightBlue">+ Add New Subject...</option>
                                         </select>
                                     </div>
+                                    
+                                    {/* DELETE BUTTON */}
                                     {subject && subject !== "__NEW__" && (
                                         <button 
                                             onClick={onDeleteSubject}
-                                            className="p-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors border border-red-200"
+                                            className="p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
                                             title="Delete this subject from the shared bank"
                                         >
                                             <Trash2 className="w-5 h-5" />
@@ -484,40 +486,34 @@
                 setSubject(newSubject);
             };
 
+            // --- DELETE SUBJECT LOGIC ---
             const handleDeleteSubject = () => {
                 if (!subject || subject === "__NEW__") return;
 
-                if (confirm(`Are you sure you want to PERMANENTLY delete the subject "${subject}" for EVERYONE? This cannot be undone.`)) {
-                    // 1. Remove from local list
+                if (confirm(`⚠️ Are you sure you want to PERMANENTLY delete the subject "${subject}" for ALL TEACHERS? This cannot be undone.`)) {
+                    // 1. Remove from lists
                     const updatedSubjects = customSubjects.filter(s => s !== subject);
-                    
-                    // 2. Clean up Types and Mock Titles
                     const updatedTypes = { ...subjectTypes };
                     delete updatedTypes[subject];
-
                     const updatedMockTitles = { ...mockTitles };
                     delete updatedMockTitles[subject];
 
-                    // 3. Clean up the actual bank data (Optional but keeps DB clean)
+                    // 2. Remove bank entries (Optional cleanup)
                     const updatedBank = { ...customBank };
-                    Object.keys(updatedBank).forEach(key => {
-                        if (key.startsWith(subject + "::")) {
-                            delete updatedBank[key];
-                        }
-                    });
-
-                    // 4. Update Cloud
+                    // We keep this simple to avoid complexity, but you could delete keys here
+                    
+                    // 3. Sync to Cloud
                     SHARED_DOC_REF.update({
                         customSubjects: updatedSubjects,
                         subjectTypes: updatedTypes,
-                        mockTitles: updatedMockTitles,
-                        customBank: updatedBank
+                        mockTitles: updatedMockTitles
+                        // We don't delete from bank to be safe, but it won't show in list
                     }).then(() => {
                         alert("Subject deleted.");
                         setSubject("");
                     }).catch(err => {
                         console.error(err);
-                        alert("Error deleting subject.");
+                        alert("Error deleting subject. Check console.");
                     });
                 }
             };
