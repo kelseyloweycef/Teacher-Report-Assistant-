@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Report Bank (Shared)</title>
+    <title>Teacher Report Assistant (Shared Live)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -41,7 +41,7 @@
     <script type="text/babel" data-presets="typescript,react">
         const { useState, useEffect, useRef } = React;
 
-        // --- 1. CONFIGURATION (PRE-FILLED) ---
+        // --- 1. FIREBASE CONFIGURATION (Your Keys) ---
         const firebaseConfig = {
             apiKey: "AIzaSyBzIP_EWP8o73U6W0xfeTFVriWopjzgrCE",
             authDomain: "reports-shared-app.firebaseapp.com",
@@ -57,63 +57,89 @@
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.firestore();
-        // This is the single "folder" where everyone's shared data lives
-        const SHARED_DOC_REF = db.collection('app_data').doc('global_shared_bank');
+        // This is the single "Shared Document" where all comments/subjects live
+        const SHARED_DOC_REF = db.collection('app_data').doc('master_bank');
 
-        // --- CONSTANTS ---
-        const HPL_HIGH_ADDITIONS = ["Consistently seeks out opportunities to contribute.", "Contributes thoughtfully to group work.", "Plays a valuable and empathetic role.", "Demonstrates confidence in their knowledge."];
+        // --- CONSTANTS & DEFAULTS ---
+        const HPL_HIGH_ADDITIONS = ["Consistently seeks out opportunities to contribute.", "Contributes thoughtfully to group work.", "Plays a valuable and empathetic role.", "Demonstrates confidence."];
         const HPL_AVERAGE_ADDITIONS = ["A willing and able collaborative learner.", "Works effectively in teams.", "Presents their own views clearly."];
         const HPL_LOW_ADDITIONS = ["Is developing their collaborative skills.", "Is beginning to recognise the value of collaboration.", "Would benefit from building confidence."];
 
-        const COMMENT_BANK_DEFAULTS = {
+        const LANGUAGE_HIGH_ADDITIONS = [];
+        const LANGUAGE_AVERAGE_ADDITIONS = [];
+        const LANGUAGE_LOW_ADDITIONS = [];
+
+        const HPL_ATTRIBUTES = { "Collaboration/Empathy": [], "Agile": [], "Hard Working": [] };
+
+        const DEFAULT_COMMENT_BANK = {
             "IB History": {
-                "HPL": { "Collaboration/Empathy": [], "Agile": [], "Hard Working": [] },
+                "HPL": HPL_ATTRIBUTES,
                 "Language": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
                 "Assessment": { "Excellent": ["Demonstrates excellent grasp of key concepts."], "Good": ["Shows good understanding."], "Average": ["Shows basic understanding."], "Poor": ["Limited understanding."] },
-                "Homework": { "Excellent": ["Consistently completes homework to a high standard."], "Good": ["Regularly completes tasks."], "Average": ["Usually completes tasks."], "Poor": ["Inconsistent."] },
+                "Homework": { "Excellent": ["Consistently completes homework."], "Good": ["Regularly completes tasks."], "Average": ["Usually completes tasks."], "Poor": ["Inconsistent."] },
                 "Improvement": { "Excellent": ["Refine essay introductions."], "Good": ["Add critical depth."], "Average": ["Add critical depth."], "Poor": ["Develop clearer arguments."] }
-            },
-            // ... (Other default subjects are handled dynamically to save space)
+            }
         };
 
         const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
         const HPL_LEVELS = ["Collaboration/Empathy", "Agile", "Hard Working"];
 
-        // --- ICONS (Simplified for brevity) ---
+        // --- ICONS ---
         const Icon = ({ path, className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>;
         const Users = ({ className }) => <Icon className={className} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />;
         const Library = ({ className }) => <Icon className={className} path={<><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></>} />;
-        const Save = ({ className }) => <Icon className={className} path={<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>} />;
-        const Share2 = ({ className }) => <Icon className={className} path={<><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></>} />;
-        const Globe = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></>} />;
-        const CheckCircle2 = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
-        const PlusCircle = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></>} />;
-        const Trash2 = ({ className }) => <Icon className={className} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />;
-        const Settings2 = ({ className }) => <Icon className={className} path={<><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></>} />;
+        const Calendar = ({ className }) => <Icon className={className} path={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>} />;
         const ArrowRight = ({ className }) => <Icon className={className} path={<><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>} />;
         const ArrowLeft = ({ className }) => <Icon className={className} path={<><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></>} />;
-        const Check = ({ className }) => <Icon className={className} path={<><polyline points="20 6 9 17 4 12"/></>} />;
-        const Copy = ({ className }) => <Icon className={className} path={<><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>} />;
+        const PlusCircle = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></>} />;
         const X = ({ className }) => <Icon className={className} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />;
+        const Save = ({ className }) => <Icon className={className} path={<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>} />;
+        const CheckCircle = ({ className }) => <Icon className={className} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />;
+        const CheckCircle2 = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
+        const MessageSquare = ({ className }) => <Icon className={className} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
+        const Trash2 = ({ className }) => <Icon className={className} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />;
+        const Pencil = ({ className }) => <Icon className={className} path={<><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></>} />;
+        const Settings2 = ({ className }) => <Icon className={className} path={<><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></>} />;
+        const Share2 = ({ className }) => <Icon className={className} path={<><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></>} />;
+        const User = ({ className }) => <Icon className={className} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />;
+        const Copy = ({ className }) => <Icon className={className} path={<><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>} />;
+        const Check = ({ className }) => <Icon className={className} path={<><polyline points="20 6 9 17 4 12"/></>} />;
+        const Edit3 = ({ className }) => <Icon className={className} path={<><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>} />;
+        const Globe = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></>} />;
+        const Star = ({ className }) => <Icon className={className} path={<><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />;
+        const ThumbsUp = ({ className }) => <Icon className={className} path={<><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></>} />;
+        const MinusCircle = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></>} />;
+        const AlertCircle = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>} />;
+        const CloudCheck = ({ className }) => <Icon className={className} path={<><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 5.5-7.5"/><polyline points="8 15 12 19 16 15"/></>} />;
+        const CloudOff = ({ className }) => <Icon className={className} path={<><line x1="1" y1="1" x2="23" y2="23"/><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 .68 8.44"/></>} />;
 
         // --- COMPONENTS ---
 
-        const Header = () => (
-            <div className="bg-school-blue text-white pt-8 pb-16 px-6 shadow-md border-b-4 border-school-lightBlue">
-                <div className="max-w-5xl mx-auto flex items-center gap-4">
-                    <div className="bg-white p-2 rounded-lg shadow-sm">
-                        <span className="text-2xl">🏫</span>
+        const Header = ({ isConnected }) => {
+            const DEFAULT_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAbFBMVEX///8Amf8AlP8Alv8Alf8Alf8Alv8Alf8Alv8Alv8AmP8Alv8Alf8Alv8Alv8Alv8Alf8Alv8Alf8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv98W13UAAAIGElEQVR4nO2da3uqOhCGRQXkIiJ4QcW2ttb+/5/4mAnJTYIkA4rtvT7vD61FA5NJJpNkxkwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGP5/6C8X/W0f4fs47/t+3w/8Yd/3/aHv+4Hze9uH+h6a9h+Xy+V6vV4ul8v1et1f2z7Y99Bf2z7M93G5Xq/76/V6uV6v++v1erleb/sI38nlcrnebvvr9Xq5Xm/76/VyuV6vtxv/5XK9Xm/X6+V6vV6v1+v1cr1eb9fr5Xq9Xm/X6+V6vV6v1+vler1eb9fr5Xq9Xm/X6+V6vV6v1+v1er1erter1Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr";
+            
+            return (
+                <div className="bg-school-blue text-white pt-8 pb-16 px-6 shadow-md border-b-4 border-school-lightBlue">
+                  <div className="max-w-5xl mx-auto flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                        <div className="bg-white p-2 rounded-lg shadow-sm overflow-hidden">
+                            <img src={DEFAULT_LOGO} className="h-16 w-auto min-w-[64px] object-contain max-w-[200px]" alt="School Logo" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight text-white">Teacher Report Assistant</h1>
+                            <div className="flex items-center gap-2 mt-2">
+                                {isConnected ? (
+                                    <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full font-bold border border-green-500/50"><CloudCheck className="w-3 h-3"/> Shared Bank Online</span>
+                                ) : (
+                                    <span className="flex items-center gap-1 text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded-full font-bold border border-red-500/50"><CloudOff className="w-3 h-3"/> Connecting...</span>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-white">Teacher Report Bank</h1>
-                        <p className="opacity-80 mt-1 text-blue-100 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                            Live Shared Database
-                        </p>
-                    </div>
+                  </div>
                 </div>
-            </div>
-        );
+            );
+        };
 
         const ClassSetup = ({ 
             subject, setSubject, subjectOptions, onStartClass, 
@@ -124,6 +150,15 @@
             const [isCreatingSubject, setIsCreatingSubject] = useState(false);
             const [newSubjectName, setNewSubjectName] = useState("");
             const [newSubjectType, setNewSubjectType] = useState('full');
+
+            const handleStart = () => {
+                const students = namesInput.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+                if (students.length === 0) {
+                    alert("Please enter at least one student name.");
+                    return;
+                }
+                onStartClass(students);
+            };
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
@@ -136,130 +171,214 @@
             return (
                 <div className="bg-white rounded-xl shadow-lg p-8 border-t-4 border-school-lightBlue animate-in">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">Class Setup</h2>
-                    <div className="space-y-6">
-                        {/* Subject Select */}
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">1. Select Subject</label>
+                    <div className="grid grid-cols-1 gap-8">
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                <Library className="w-4 h-4 text-school-lightBlue" /> 1. Select Subject (Shared Bank)
+                            </label>
                             {isCreatingSubject ? (
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                                    <input type="text" value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} placeholder="e.g. Year 8 Science" className="w-full p-2 border rounded mb-3" />
-                                    <div className="flex gap-2">
-                                        <button onClick={() => setIsCreatingSubject(false)} className="px-3 py-1 bg-white border rounded">Cancel</button>
-                                        <button onClick={handleSaveSubject} className="px-3 py-1 bg-school-lightBlue text-white rounded font-bold">Add to Shared Bank</button>
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">New Subject Name</label>
+                                    <input type="text" autoFocus value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} placeholder="e.g. Year 8 Science" className="w-full p-3 border border-school-lightBlue rounded-lg outline-none mb-4 bg-white" />
+                                    
+                                    <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                                        <label className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border ${newSubjectType === 'full' ? 'bg-white border-school-lightBlue' : 'border-transparent'}`}>
+                                            <input type="radio" name="reportType" checked={newSubjectType === 'full'} onChange={() => setNewSubjectType('full')} className="w-4 h-4" />
+                                            <div className="flex flex-col"><span className="text-sm font-bold">Full Report</span><span className="text-xs text-gray-500">5 Categories</span></div>
+                                        </label>
+                                        <label className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border ${newSubjectType === 'shared' ? 'bg-white border-school-lightBlue' : 'border-transparent'}`}>
+                                            <input type="radio" name="reportType" checked={newSubjectType === 'shared'} onChange={() => setNewSubjectType('shared')} className="w-4 h-4" />
+                                            <div className="flex flex-col"><span className="text-sm font-bold">Shared Report</span><span className="text-xs text-gray-500">Year 9 Style</span></div>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex gap-2 justify-end">
+                                        <button onClick={() => setIsCreatingSubject(false)} className="px-4 py-2 bg-white text-gray-600 border rounded-lg text-sm">Cancel</button>
+                                        <button onClick={handleSaveSubject} className="px-4 py-2 bg-school-lightBlue text-white rounded-lg font-bold text-sm">Create & Sync</button>
                                     </div>
                                 </div>
                             ) : (
-                                <select value={subject} onChange={(e) => e.target.value === "__NEW__" ? (setIsCreatingSubject(true), setSubject("")) : setSubject(e.target.value)} className="w-full p-3 border rounded-lg bg-white text-lg">
-                                    <option value="">-- Select Subject --</option>
-                                    {subjectOptions.map(subj => <option key={subj} value={subj}>{subj}</option>)}
-                                    <option disabled>────────────────</option>
-                                    <option value="__NEW__" className="font-bold text-school-lightBlue">+ Add New Subject to Bank...</option>
-                                </select>
+                                <div className="relative">
+                                    <select value={subject} onChange={(e) => e.target.value === "__NEW__" ? (setIsCreatingSubject(true), setSubject("")) : setSubject(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg">
+                                        <option value="">-- Select Subject --</option>
+                                        {subjectOptions.map(subj => <option key={subj} value={subj}>{subj}</option>)}
+                                        <option disabled>────────────────</option>
+                                        <option value="__NEW__" className="font-bold text-school-lightBlue">+ Add New Subject...</option>
+                                    </select>
+                                </div>
                             )}
                         </div>
 
                         {/* Report Period */}
-                        <div className={`transition-opacity ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">2. Report Period</label>
+                        <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                <Calendar className="w-4 h-4 text-school-lightBlue" /> 2. Select Report Period
+                            </label>
                             <div className="grid grid-cols-3 gap-4">
                                 {["Progress 2", "Progress 3", "Mocks"].map(p => (
-                                    <button key={p} onClick={() => setReportPeriod(p)} className={`p-4 rounded-lg border-2 font-bold ${reportPeriod === p ? 'border-school-lightBlue bg-school-lightBlue text-white' : 'border-gray-200 bg-gray-50'}`}>{p}</button>
+                                    <button key={p} onClick={() => setReportPeriod(p)} className={`p-4 rounded-lg border-2 font-bold ${reportPeriod === p ? 'border-school-lightBlue bg-school-lightBlue text-white' : 'border-gray-200 bg-gray-50 text-gray-600'}`}>{p}</button>
                                 ))}
                             </div>
                             {reportPeriod === "Mocks" && (
-                                <div className="mt-4 p-4 bg-red-50 border border-red-100 rounded-lg">
-                                    <h3 className="text-school-red font-bold text-sm mb-2">Shared Mock Categories</h3>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {[0,1,2,3,4].map(idx => (
-                                            <input key={idx} type="text" value={mockTitles?.[idx] || ""} onChange={(e) => onUpdateMockTitle(idx, e.target.value)} placeholder={`Category ${idx + 1}`} className="p-2 text-sm border rounded" />
+                                <div className="bg-red-50 border border-red-100 rounded-lg p-4 mt-2">
+                                    <h3 className="text-school-red font-bold text-sm mb-2">Configure Mock Categories (Shared)</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {[0, 1, 2, 3, 4].map((idx) => (
+                                            <input key={idx} type="text" value={mockTitles?.[idx] || ""} onChange={(e) => onUpdateMockTitle && onUpdateMockTitle(idx, e.target.value)} placeholder={`Mock Category ${idx + 1}`} className="p-2 text-sm border border-red-200 rounded" />
                                         ))}
                                     </div>
-                                    <p className="text-xs text-red-400 mt-2">* Updates here save for everyone</p>
+                                    <p className="text-xs text-red-400 mt-2">* Changes here update for all teachers</p>
                                 </div>
                             )}
                         </div>
 
                         {/* Students */}
-                        <div className={`transition-opacity ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">3. Student Names</label>
-                            <textarea value={namesInput} onChange={(e) => setNamesInput(e.target.value)} placeholder="Alice&#10;Bob" className="w-full p-3 border rounded-lg h-32" />
+                        <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                <Users className="w-4 h-4 text-school-lightBlue" /> 3. Enter Student Names (Your Session Only)
+                            </label>
+                            <textarea value={namesInput} onChange={(e) => setNamesInput(e.target.value)} placeholder="Alice Smith&#10;Bob Jones" className="w-full p-4 border border-gray-300 rounded-lg h-64" />
                         </div>
-
-                        <button onClick={() => onStartClass(namesInput.split('\n').filter(n=>n.trim()))} disabled={!subject || !namesInput.trim()} className="w-full bg-school-red text-white font-bold py-4 rounded-lg hover:bg-red-700 transition-colors">Start Writing Reports</button>
+                        <button onClick={handleStart} disabled={!subject || !namesInput.trim()} className="w-full bg-school-red text-white font-bold py-4 rounded-lg shadow-md hover:bg-school-redHover disabled:opacity-50 text-lg">
+                            Start Report Cycle <ArrowRight className="w-5 h-5 inline" />
+                        </button>
                     </div>
                 </div>
             );
         };
 
-        const CommentManager = ({ category, options, onAdd, onDelete }) => {
-            const [isAdding, setIsAdding] = useState(false);
-            const [newText, setNewText] = useState("");
+        const CommentCategory = ({ 
+            category, optionsMap, currentValue, onChange, 
+            onAddComment, onDeleteCustomComment, 
+            levels
+        }) => {
             const [activeLevel, setActiveLevel] = useState(null);
-            
-            // Filter options based on active level
-            const displayOptions = activeLevel ? (options[activeLevel] || []) : [];
+            const [isAdding, setIsAdding] = useState(false);
+            const [newComment, setNewComment] = useState("");
+
+            const handleSaveNewComment = () => {
+                if (newComment.trim() && activeLevel) {
+                    onAddComment(newComment.trim(), activeLevel);
+                    setNewComment("");
+                    setIsAdding(false);
+                }
+            };
+
+            const activeOptions = (activeLevel && optionsMap && optionsMap[activeLevel]) || [];
 
             return (
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {Object.keys(options).map(lvl => (
-                            <button key={lvl} onClick={() => {setActiveLevel(lvl); setIsAdding(false);}} className={`px-3 py-1 rounded-full text-xs font-bold border ${activeLevel === lvl ? 'bg-school-lightBlue text-white' : 'bg-gray-100 text-gray-600'}`}>
-                                {lvl}
-                            </button>
-                        ))}
-                    </div>
-
-                    {activeLevel && (
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-xs font-bold text-gray-500">{activeLevel} Comments (Shared)</span>
-                                <button onClick={() => setIsAdding(!isAdding)} className="text-xs text-school-lightBlue font-bold flex items-center gap-1 hover:underline">
-                                    <PlusCircle className="w-3 h-3"/> Add New
+                <div className="p-4 bg-white rounded-xl shadow-sm border-l-4 border-school-lightBlue relative">
+                    <div className="mb-4">
+                        <div className="flex flex-wrap gap-2">
+                            {levels.map((lvl) => (
+                                <button key={lvl} onClick={() => { setActiveLevel(lvl); setIsAdding(false); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${activeLevel === lvl ? 'bg-school-lightBlue text-white border-school-lightBlue' : 'bg-white text-gray-600 border-gray-200'}`}>
+                                    {lvl}
                                 </button>
-                            </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {activeLevel && (
+                        <div className="mb-3 space-y-2">
+                             <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-gray-500">{activeLevel} Comments (Shared Bank)</span>
+                                <button onClick={() => setIsAdding(!isAdding)} className="text-xs text-school-lightBlue font-bold flex items-center gap-1"><PlusCircle className="w-3 h-3"/> Add New</button>
+                             </div>
 
-                            {isAdding && (
-                                <div className="flex gap-2 mb-3 animate-in">
-                                    <input type="text" value={newText} onChange={(e)=>setNewText(e.target.value)} className="flex-1 border p-1 text-sm rounded" placeholder="Type new shared comment..." />
-                                    <button onClick={() => { if(newText.trim()) { onAdd(newText, activeLevel); setNewText(""); setIsAdding(false); }}} className="bg-green-600 text-white px-3 text-xs rounded font-bold">Save</button>
+                             {isAdding && (
+                                <div className="flex gap-2">
+                                    <input type="text" value={newComment} onChange={(e)=>setNewText(e.target.value)} className="flex-1 border p-1 rounded text-sm" placeholder="Type shared comment..." autoFocus />
+                                    <button onClick={handleSaveNewComment} className="bg-green-600 text-white px-2 rounded text-xs">Save</button>
                                 </div>
-                            )}
+                             )}
 
-                            <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-1">
-                                {displayOptions.length === 0 && <p className="text-xs text-gray-400 italic">No comments yet.</p>}
-                                {displayOptions.map((opt, idx) => (
-                                    <div key={idx} className="group flex justify-between items-start text-sm p-2 hover:bg-blue-50 rounded cursor-pointer border border-transparent hover:border-blue-100">
-                                        <span className="text-gray-700">{opt}</span>
-                                        <button onClick={(e) => {e.stopPropagation(); if(confirm("Delete this shared comment?")) onDelete(opt, activeLevel);}} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600">
-                                            <Trash2 className="w-3 h-3"/>
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
+                             <div className="relative">
+                                <select className="w-full p-2 border rounded-md bg-gray-50 text-sm" onChange={(e) => onChange(e.target.value)} value="">
+                                    <option value="" disabled>Select a comment...</option>
+                                    {activeOptions.map((opt, idx) => <option key={idx} value={opt}>{opt}</option>)}
+                                </select>
+                             </div>
                         </div>
                     )}
+                    
+                    <textarea rows={2} value={currentValue} onChange={(e) => onChange(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg text-sm" placeholder="Selected comment appears here..."></textarea>
                 </div>
             );
         };
 
+        const BatchStep = ({ 
+            category, students, classData, optionsMap, 
+            onUpdateStudent, onAddCustomComment, onDeleteCustomComment, levels
+        }) => {
+            return (
+                <div className="space-y-8 animate-in">
+                    <div className="bg-blue-50 border-l-4 border-school-lightBlue p-4 rounded-r-lg mb-6">
+                        <h2 className="text-xl font-bold text-school-blue">Category: {category.label}</h2>
+                    </div>
+                    <div className="grid grid-cols-1 gap-6">
+                        {students.map((student, index) => (
+                            <div key={student} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
+                                    <span className="bg-school-lightBlue text-white text-xs font-bold px-2 py-1 rounded-full">{index + 1}</span>
+                                    <h3 className="font-bold text-gray-800 flex items-center gap-2"><User className="w-4 h-4 text-gray-400" /> {student}</h3>
+                                </div>
+                                <div className="p-2">
+                                    <CommentCategory 
+                                        category={category} 
+                                        optionsMap={optionsMap} 
+                                        currentValue={classData[student]?.[category.id] || ""} 
+                                        onChange={(val) => onUpdateStudent(student, category.id, val)} 
+                                        onAddComment={onAddCustomComment} 
+                                        onDeleteCustomComment={onDeleteCustomComment}
+                                        levels={levels}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const ResultPanel = ({ prompt }) => {
+            return (
+                <div className="mt-8 bg-white rounded-xl shadow-xl overflow-hidden border border-gray-200">
+                    <div className="p-4 border-b bg-gray-50 font-bold text-gray-700">Generated Class Report Document</div>
+                    <textarea readOnly value={prompt} className="w-full min-h-[500px] p-6 bg-gray-50 resize-y font-mono text-sm border-none" />
+                </div>
+            );
+        };
+
+        const ActionPanel = ({ onBack, onNext, isLastStep }) => (
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-50">
+                <div className="max-w-5xl mx-auto flex justify-between gap-4">
+                    <button onClick={onBack} className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
+                        <ArrowLeft className="w-5 h-5" /> Back
+                    </button>
+                    <button onClick={onNext} className={`flex items-center gap-2 px-8 py-3 rounded-lg font-bold text-white shadow-md ${isLastStep ? 'bg-green-600 hover:bg-green-700' : 'bg-school-lightBlue hover:bg-school-blue'}`}>
+                        {isLastStep ? <><CheckCircle className="w-5 h-5" /> Finish & Generate</> : <><ArrowRight className="w-5 h-5" /> Next Category</>}
+                    </button>
+                </div>
+            </div>
+        );
+
         const App = () => {
-            const [loading, setLoading] = useState(true);
-            
-            // --- SHARED STATE (From Firebase) ---
+            // --- SHARED STATE (FROM FIREBASE) ---
             const [customSubjects, setCustomSubjects] = useState([]);
             const [subjectTypes, setSubjectTypes] = useState({});
             const [mockTitles, setMockTitles] = useState({});
             const [customBank, setCustomBank] = useState({});
+            const [isConnected, setIsConnected] = useState(false);
 
-            // --- LOCAL STATE (Per User Session) ---
+            // --- LOCAL STATE (SESSION) ---
             const [subject, setSubject] = useState("");
             const [students, setStudents] = useState([]);
-            const [classData, setClassData] = useState({}); // { StudentName: { Category: "Comment" } }
+            const [currentStepIndex, setCurrentStepIndex] = useState(0);
             const [reportPeriod, setReportPeriod] = useState("Progress 2");
-            const [step, setStep] = useState("setup"); // setup, writing, results
-            const [currentCatIndex, setCurrentCatIndex] = useState(0);
+            const [classData, setClassData] = useState({});
+            const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
 
-            // 1. SYNC WITH FIREBASE
+            // --- 1. FIREBASE SYNC ---
             useEffect(() => {
                 const unsubscribe = SHARED_DOC_REF.onSnapshot((doc) => {
                     if (doc.exists) {
@@ -267,187 +386,186 @@
                         setCustomSubjects(data.customSubjects || []);
                         setSubjectTypes(data.subjectTypes || {});
                         setMockTitles(data.mockTitles || {});
-                        setCustomBank(data.customBank || {});
+                        setCustomBank(data.customBank || DEFAULT_COMMENT_BANK);
+                        setIsConnected(true);
                     } else {
-                        // Initialize if empty
-                        SHARED_DOC_REF.set({ customSubjects: [], subjectTypes: {}, mockTitles: {}, customBank: {} });
+                        // First load - Initialize Cloud Data
+                        SHARED_DOC_REF.set({
+                            customSubjects: [],
+                            subjectTypes: {},
+                            mockTitles: {},
+                            customBank: DEFAULT_COMMENT_BANK
+                        });
+                        setIsConnected(true);
                     }
-                    setLoading(false);
+                }, (err) => {
+                    console.error("Firebase Sync Error:", err);
+                    setIsConnected(false);
                 });
                 return () => unsubscribe();
             }, []);
 
-            // 2. HELPER: SAVE TO FIREBASE
-            const updateShared = (field, value) => {
-                SHARED_DOC_REF.update({ [field]: value }).catch(e => console.error(e));
+            // --- 2. UPDATE HELPERS (WRITES TO CLOUD) ---
+            const updateCloud = (key, value) => {
+                SHARED_DOC_REF.update({ [key]: value }).catch(console.error);
             };
 
-            // 3. LOGIC
-            const handleAddSubject = (name, type) => {
-                const newSubjects = [...customSubjects, name];
-                const newTypes = { ...subjectTypes, [name]: type };
+            const handleAddSubject = (newSubject, type) => {
+                const updatedSubjects = [...customSubjects, newSubject];
+                const updatedTypes = { ...subjectTypes, [newSubject]: type };
                 
                 // Initialize bank for new subject if needed
                 let newBank = { ...customBank };
-                if (!newBank[`${name}::SHARED`]) {
-                    newBank[`${name}::SHARED`] = { "HPL": { "Collaboration/Empathy": [], "Agile": [], "Hard Working": [] } };
+                const sharedKey = `${newSubject}::SHARED`;
+                if (!newBank[sharedKey]) {
+                     // Create structure based on type
+                     newBank[sharedKey] = {
+                        "HPL": HPL_ATTRIBUTES,
+                        "Language": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                         // Add default categories...
+                        "Assessment": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                        "Homework": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                        "Improvement": { "Excellent": [], "Good": [], "Average": [], "Poor": [] }
+                     };
                 }
 
                 SHARED_DOC_REF.update({
-                    customSubjects: newSubjects,
-                    subjectTypes: newTypes,
+                    customSubjects: updatedSubjects,
+                    subjectTypes: updatedTypes,
                     customBank: newBank
                 });
-                setSubject(name);
+
+                setSubject(newSubject);
             };
 
             const handleUpdateMockTitle = (idx, val) => {
                 const current = mockTitles[subject] || ["", "", "", "", ""];
                 current[idx] = val;
-                const newTitles = { ...mockTitles, [subject]: current };
-                updateShared('mockTitles', newTitles);
+                updateCloud('mockTitles', { ...mockTitles, [subject]: current });
             };
 
-            const handleAddCustomComment = (category, level, text) => {
-                const key = (category === 'HPL' || category === 'Language') ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
-                const subjBank = customBank[key] || {};
-                const catBank = subjBank[category] || {};
-                const lvlList = catBank[level] || [];
+            const getBankKey = (catId) => (catId === 'HPL' || catId === 'Language') ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
+
+            const handleAddCustomComment = (catId, text, level) => {
+                const key = getBankKey(catId);
+                const newBank = JSON.parse(JSON.stringify(customBank)); // Deep copy
                 
-                if (!lvlList.includes(text)) {
-                    const newBank = { ...customBank };
-                    if (!newBank[key]) newBank[key] = {};
-                    if (!newBank[key][category]) newBank[key][category] = {};
-                    newBank[key][category][level] = [...lvlList, text];
-                    updateShared('customBank', newBank);
+                if (!newBank[key]) newBank[key] = {};
+                if (!newBank[key][catId]) newBank[key][catId] = {};
+                if (!newBank[key][catId][level]) newBank[key][catId][level] = [];
+
+                if (!newBank[key][catId][level].includes(text)) {
+                    newBank[key][catId][level].push(text);
+                    updateCloud('customBank', newBank);
                 }
             };
 
-            const handleDeleteCustomComment = (category, level, text) => {
-                const key = (category === 'HPL' || category === 'Language') ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
-                const newBank = { ...customBank };
-                newBank[key][category][level] = newBank[key][category][level].filter(t => t !== text);
-                updateShared('customBank', newBank);
-            };
-
-            // 4. CATEGORY LOGIC
+            // --- 3. LOCAL LOGIC (SAME AS ORIGINAL APP) ---
             const getCategories = () => {
                 if (reportPeriod === "Mocks") {
-                    return (mockTitles[subject] || []).map((t, i) => ({ id: `Mock${i+1}`, label: t || `Category ${i+1}` })).filter(c=>c.label);
+                    const titles = mockTitles[subject] || ["", "", "", "", ""];
+                    return titles.map((t, i) => ({ id: `Mock${i + 1}`, label: t.trim() })).filter(c => c.label.length > 0);
                 }
-                const isShared = subjectTypes[subject] === 'shared' || subject.includes("Year 9");
-                if (isShared) return [{id: "Assessment", label: "Assessment"}, {id: "Improvement", label: "Improvement"}, {id: "HPL", label: "HPL"}, {id: "Language", label: "Language"}];
-                return [{id: "HPL", label: "HPL"}, {id: "Language", label: "Language"}, {id: "Assessment", label: "Assessment"}, {id: "Improvement", label: "Improvement"}];
+                const isShared = subjectTypes[subject] === 'shared';
+                if (isShared || subject.includes("Year 9")) {
+                    return [{id: "Assessment", label: "Assessment"}, {id: "Improvement", label: "Improvement"}, {id: "HPL", label: "HPL (Optional)"}, {id: "Language", label: "Language"}];
+                }
+                return [{id: "HPL", label: "HPL"}, {id: "Language", label: "Language"}, {id: "Assessment", label: "Assessment"}, {id: "Homework", label: "Homework"}, {id: "Improvement", label: "Improvement"}];
             };
 
             const categories = subject ? getCategories() : [];
-            const activeCategory = categories[currentCatIndex];
+            const isSetup = students.length === 0;
+            const isResultStep = !isSetup && currentStepIndex === categories.length;
+            const activeCategory = (!isSetup && !isResultStep) ? categories[currentStepIndex] : null;
 
-            // 5. GET OPTIONS FOR CURRENT VIEW
-            const getCurrentOptions = (catId) => {
-                const key = (catId === 'HPL' || catId === 'Language') ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
-                const defaults = COMMENT_BANK_DEFAULTS[subject]?.[catId] || {};
-                const customs = customBank[key]?.[catId] || {};
-                
-                const levels = catId === 'HPL' ? HPL_LEVELS : STANDARD_LEVELS;
-                const merged = {};
-                
-                levels.forEach(lvl => {
-                    merged[lvl] = [...(defaults[lvl] || []), ...(customs[lvl] || [])];
-                });
-                return merged;
+            const handleStartClass = (names) => {
+                setStudents(names);
+                const initData = {};
+                names.forEach(n => initData[n] = {});
+                setClassData(initData);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 
-            if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-school-lightBlue rounded-full border-t-transparent"></div></div>;
+            const getOptionsMap = (catId) => {
+                const key = getBankKey(catId);
+                const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
+                const map = {};
+                levels.forEach(l => {
+                    // Combine default bank + custom bank from cloud
+                    const defaults = DEFAULT_COMMENT_BANK[subject]?.[catId]?.[l] || [];
+                    const customs = customBank[key]?.[catId]?.[l] || [];
+                    map[l] = [...defaults, ...customs];
+                });
+                return map;
+            };
+
+            const handleUpdateStudent = (name, catId, val) => {
+                setClassData(prev => ({ ...prev, [name]: { ...prev[name], [catId]: val } }));
+            };
+
+            const generateFinalBatch = () => {
+                let out = "";
+                students.forEach(s => {
+                    out += `${s}\n`;
+                    categories.forEach(c => {
+                        if (classData[s]?.[c.id]) out += `• ${classData[s][c.id].trim()}\n`;
+                    });
+                    out += `\n-----------------------------------\n\n`;
+                });
+                setFinalBatchPrompt(out);
+            };
 
             return (
-                <div className="min-h-screen bg-gray-50 pb-20">
-                    <Header />
-                    <main className="max-w-5xl mx-auto px-4 -mt-8 relative z-10">
-                        
-                        {step === "setup" && (
-                            <ClassSetup 
+                <div className="min-h-screen bg-gray-50 pb-32">
+                    <Header isConnected={isConnected} />
+                    <main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
+                        {isSetup && (
+                            <ClassSetup
                                 subject={subject} setSubject={setSubject}
-                                subjectOptions={[...Object.keys(COMMENT_BANK_DEFAULTS), ...customSubjects]}
-                                onStartClass={(list) => { setStudents(list); setStep("writing"); }}
+                                subjectOptions={[...Object.keys(DEFAULT_COMMENT_BANK), ...customSubjects]}
+                                onStartClass={handleStartClass}
                                 onAddSubject={handleAddSubject}
                                 reportPeriod={reportPeriod} setReportPeriod={setReportPeriod}
-                                mockTitles={mockTitles} onUpdateMockTitle={handleUpdateMockTitle}
+                                mockTitles={mockTitles[subject] || ["", "", "", "", ""]}
+                                onUpdateMockTitle={handleUpdateMockTitle}
                             />
                         )}
 
-                        {step === "writing" && activeCategory && (
-                            <div className="space-y-6 animate-in">
-                                {/* Progress Bar */}
-                                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center">
-                                    <h2 className="text-xl font-bold text-gray-800">{activeCategory.label}</h2>
-                                    <div className="text-sm text-gray-500">Step {currentCatIndex + 1} of {categories.length}</div>
+                        {activeCategory && (
+                            <BatchStep
+                                category={activeCategory}
+                                students={students}
+                                classData={classData}
+                                optionsMap={getOptionsMap(activeCategory.id)}
+                                onUpdateStudent={handleUpdateStudent}
+                                onAddCustomComment={handleAddCustomComment}
+                                levels={(activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS}
+                            />
+                        )}
+
+                        {isResultStep && (
+                            <div className="animate-in">
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6 text-center">
+                                    <h2 className="text-2xl font-bold text-green-800">Class Reports Generated!</h2>
                                 </div>
-
-                                {/* Shared Bank Manager */}
-                                <CommentManager 
-                                    category={activeCategory.id}
-                                    options={getCurrentOptions(activeCategory.id)}
-                                    onAdd={(text, lvl) => handleAddCustomComment(activeCategory.id, lvl, text)}
-                                    onDelete={(text, lvl) => handleDeleteCustomComment(activeCategory.id, lvl, text)}
-                                />
-
-                                {/* Student Cards */}
-                                <div className="grid gap-4">
-                                    {students.map(student => (
-                                        <div key={student} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                                            <div className="font-bold text-school-blue mb-2">{student}</div>
-                                            <textarea 
-                                                className="w-full border rounded p-2 text-sm h-24" 
-                                                placeholder={`Write ${activeCategory.label} comment...`}
-                                                value={classData[student]?.[activeCategory.id] || ""}
-                                                onChange={(e) => setClassData({...classData, [student]: {...classData[student], [activeCategory.id]: e.target.value}})}
-                                            />
-                                            {/* Quick Pick Chips */}
-                                            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                                                {Object.values(getCurrentOptions(activeCategory.id)).flat().slice(0, 5).map((opt, i) => (
-                                                    <button key={i} onClick={() => setClassData({...classData, [student]: {...classData[student], [activeCategory.id]: (classData[student]?.[activeCategory.id]||"") + " " + opt}})} className="whitespace-nowrap px-2 py-1 bg-gray-100 text-xs rounded hover:bg-gray-200 truncate max-w-[150px]">
-                                                        + {opt}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
+                                <ResultPanel prompt={finalBatchPrompt} />
+                                <div className="mt-8 text-center">
+                                    <button onClick={() => window.location.reload()} className="text-gray-500 hover:text-gray-700 underline">Start Over</button>
                                 </div>
                             </div>
                         )}
-
-                        {step === "results" && (
-                            <div className="bg-white p-6 rounded-lg shadow-lg animate-in">
-                                <h2 className="text-2xl font-bold mb-4 text-green-700">All Reports Generated</h2>
-                                <textarea readOnly className="w-full h-96 p-4 bg-gray-50 border rounded font-mono text-sm" value={
-                                    students.map(s => {
-                                        let report = `${s}\n`;
-                                        categories.forEach(c => {
-                                            if(classData[s]?.[c.id]) report += `• ${classData[s][c.id].trim()}\n`;
-                                        });
-                                        return report + "\n-------------------\n";
-                                    }).join("\n")
-                                } />
-                            </div>
-                        )}
-
                     </main>
 
-                    {/* Footer Nav */}
-                    {step === "writing" && (
-                        <div className="fixed bottom-0 w-full bg-white border-t p-4 shadow-lg z-50">
-                            <div className="max-w-5xl mx-auto flex justify-between">
-                                <button onClick={() => currentCatIndex > 0 ? setCurrentCatIndex(currentCatIndex-1) : setStep("setup")} className="px-6 py-2 rounded text-gray-600 font-bold hover:bg-gray-100">Back</button>
-                                <button onClick={() => {
-                                    if(currentCatIndex < categories.length - 1) setCurrentCatIndex(currentCatIndex+1);
-                                    else setStep("results");
-                                    window.scrollTo({top:0, behavior:'smooth'});
-                                }} className="px-8 py-2 bg-school-blue text-white rounded font-bold hover:bg-blue-900 shadow-md">
-                                    {currentCatIndex === categories.length - 1 ? "Finish & Generate" : "Next Category"}
-                                </button>
-                            </div>
-                        </div>
+                    {!isSetup && !isResultStep && (
+                        <ActionPanel
+                            onBack={() => setCurrentStepIndex(currentStepIndex - 1)}
+                            onNext={() => {
+                                if (currentStepIndex === categories.length - 1) generateFinalBatch();
+                                setCurrentStepIndex(currentStepIndex + 1);
+                                window.scrollTo(0,0);
+                            }}
+                            isLastStep={currentStepIndex === categories.length - 1}
+                        />
                     )}
                 </div>
             );
