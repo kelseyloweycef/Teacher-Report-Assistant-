@@ -1,0 +1,5 @@
+{
+  "name": "Deploy of Teacher Report Assistant",
+  "description": "A comprehensive tool for teachers to generate student reports efficiently using customizable comment banks.",
+  "requestFramePermissions": []
+}
