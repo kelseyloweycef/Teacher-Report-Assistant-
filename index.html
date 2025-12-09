@@ -1,43 +1,118 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Report Assistant</title>
+  <title>Teacher Report Assistant</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background-color: #f3f4f6; color: #1f2937; max-width: 800px; margin: 0 auto; padding: 20px; }
+    h1 { color: #111827; text-align: center; }
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: { sans: ['Inter', 'sans-serif'] },
-            colors: { school: { blue: '#0f172a', lightBlue: '#1e3a8a', red: '#dc2626' } }
-          }
-        }
-      }
-    </script>
-    
-    <!-- Placeholder for Shared Data -->
-    <script id="shared-data" type="application/json"></script>
-<script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "react/": "https://aistudiocdn.com/react@^19.2.1/",
-    "react": "https://aistudiocdn.com/react@^19.2.1"
-  }
-}
-</script>
-</head>
-<body class="bg-gray-50 text-slate-800 antialiased">
-    
-    <div id="root"></div>
+    /* The List of Reports */
+    #report-list { 
+        background: white; 
+        height: 500px; 
+        overflow-y: scroll; 
+        border-radius: 8px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .card { border-bottom: 1px solid #e5e7eb; padding-bottom: 15px; margin-bottom: 15px; }
+    .label { font-weight: bold; font-size: 0.9em; text-transform: uppercase; color: #6b7280; }
+    .content { margin-top: 5px; margin-bottom: 10px; line-height: 1.5; }
+    .ai-response { color: #2563eb; background: #eff6ff; padding: 10px; border-radius: 6px; }
 
-    <script type="module" src="/index.tsx"></script>
+    /* Input Area */
+    textarea { width: 100%; height: 100px; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-family: inherit; box-sizing: border-box;}
+    button { width: 100%; padding: 12px; background-color: #dc2626; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    button:hover { background-color: #b91c1c; }
+  </style>
+</head>
+<body>
+
+  <h1>🍎 Teacher Report Assistant</h1>
+  
+  <div id="report-list">Loading shared reports...</div>
+
+  <h3>Create New Report</h3>
+  <textarea id="userInput" placeholder="Enter student details here (e.g., 'John is good at math but talks too much')..."></textarea>
+  <button id="saveBtn">Generate & Save Report</button>
+
+  <script type="module">
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } 
+      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // ======================================================
+    // 1. YOUR GOOGLE AI KEY (I added this for you)
+    // ======================================================
+    const GOOGLE_AI_KEY = "AIzaSyBDn2PCcV2jXc6CKgorRH0K01IGVdE9k04";
+
+    // ======================================================
+    // 2. YOUR FIREBASE CONFIG (I added this for you)
+    // ======================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBzIP_EWP8o73U6W0xfeTFVriWopjzgrCE",
+      authDomain: "reports-shared-app.firebaseapp.com",
+      projectId: "reports-shared-app",
+      storageBucket: "reports-shared-app.firebasestorage.app",
+      messagingSenderId: "158065703096",
+      appId: "1:158065703096:web:160fc5d53253d63eea5c4d",
+      measurementId: "G-QECHCQCZ0C"
+    };
+
+    // --- SYSTEM LOGIC ---
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const genAI = new GoogleGenerativeAI(GOOGLE_AI_KEY);
+    const listDiv = document.getElementById('report-list');
+
+    // READ DATA (Listen for updates)
+    const q = query(collection(db, "reports"), orderBy("date", "desc"));
+    onSnapshot(q, (snapshot) => {
+      listDiv.innerHTML = "";
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        listDiv.innerHTML += `
+            <div class="card">
+                <div class="label">Input</div>
+                <div class="content">${data.original}</div>
+                <div class="label">Report</div>
+                <div class="content ai-response">${data.analysis}</div>
+            </div>`;
+      });
+    });
+
+    // WRITE DATA (Save updates)
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const input = document.getElementById('userInput');
+      const text = input.value;
+      if (!text) return;
+
+      input.value = "Generating Report... (Please wait)";
+      document.getElementById('saveBtn').disabled = true;
+      document.getElementById('saveBtn').style.backgroundColor = "#ccc";
+      
+      try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+        const result = await model.generateContent(text);
+        const aiResponse = result.response.text();
+
+        await addDoc(collection(db, "reports"), {
+            original: text,
+            analysis: aiResponse,
+            date: new Date()
+        });
+
+        input.value = ""; 
+      } catch (error) {
+        alert("Error: " + error.message);
+        input.value = text; 
+      }
+      document.getElementById('saveBtn').disabled = false;
+      document.getElementById('saveBtn').style.backgroundColor = "#dc2626";
+    });
+  </script>
+
 </body>
 </html>
