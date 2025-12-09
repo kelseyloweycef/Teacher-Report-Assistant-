@@ -77,6 +77,7 @@
         const Globe = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></>} />;
         const Share = ({ className }) => <Icon className={className} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></>} />;
         const RotateCcw = ({ className }) => <Icon className={className} path={<><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></>} />;
+        const Trash2 = ({ className }) => <Icon className={className} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />;
 
         const DEFAULT_COMMENT_BANK = {
             "IB History": {
@@ -148,7 +149,7 @@
         const ClassSetup = ({ 
             subject, setSubject, subjectOptions, onStartClass, 
             onAddSubject, reportPeriod, setReportPeriod, 
-            mockTitles, onUpdateMockTitle 
+            mockTitles, onUpdateMockTitle, onDeleteSubject 
         }) => {
             const [namesInput, setNamesInput] = useState("");
             const [isCreatingSubject, setIsCreatingSubject] = useState(false);
@@ -202,13 +203,24 @@
                                     </div>
                                 </div>
                             ) : (
-                                <div className="relative">
-                                    <select value={subject} onChange={(e) => e.target.value === "__NEW__" ? (setIsCreatingSubject(true), setSubject("")) : setSubject(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg">
-                                        <option value="">-- Select Subject --</option>
-                                        {subjectOptions.map(subj => <option key={subj} value={subj}>{subj}</option>)}
-                                        <option disabled>────────────────</option>
-                                        <option value="__NEW__" className="font-bold text-school-lightBlue">+ Add New Subject...</option>
-                                    </select>
+                                <div className="flex gap-2 items-center">
+                                    <div className="relative flex-1">
+                                        <select value={subject} onChange={(e) => e.target.value === "__NEW__" ? (setIsCreatingSubject(true), setSubject("")) : setSubject(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg">
+                                            <option value="">-- Select Subject --</option>
+                                            {subjectOptions.map(subj => <option key={subj} value={subj}>{subj}</option>)}
+                                            <option disabled>────────────────</option>
+                                            <option value="__NEW__" className="font-bold text-school-lightBlue">+ Add New Subject...</option>
+                                        </select>
+                                    </div>
+                                    {subject && subject !== "__NEW__" && (
+                                        <button 
+                                            onClick={onDeleteSubject}
+                                            className="p-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors border border-red-200"
+                                            title="Delete this subject from the shared bank"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -472,6 +484,44 @@
                 setSubject(newSubject);
             };
 
+            const handleDeleteSubject = () => {
+                if (!subject || subject === "__NEW__") return;
+
+                if (confirm(`Are you sure you want to PERMANENTLY delete the subject "${subject}" for EVERYONE? This cannot be undone.`)) {
+                    // 1. Remove from local list
+                    const updatedSubjects = customSubjects.filter(s => s !== subject);
+                    
+                    // 2. Clean up Types and Mock Titles
+                    const updatedTypes = { ...subjectTypes };
+                    delete updatedTypes[subject];
+
+                    const updatedMockTitles = { ...mockTitles };
+                    delete updatedMockTitles[subject];
+
+                    // 3. Clean up the actual bank data (Optional but keeps DB clean)
+                    const updatedBank = { ...customBank };
+                    Object.keys(updatedBank).forEach(key => {
+                        if (key.startsWith(subject + "::")) {
+                            delete updatedBank[key];
+                        }
+                    });
+
+                    // 4. Update Cloud
+                    SHARED_DOC_REF.update({
+                        customSubjects: updatedSubjects,
+                        subjectTypes: updatedTypes,
+                        mockTitles: updatedMockTitles,
+                        customBank: updatedBank
+                    }).then(() => {
+                        alert("Subject deleted.");
+                        setSubject("");
+                    }).catch(err => {
+                        console.error(err);
+                        alert("Error deleting subject.");
+                    });
+                }
+            };
+
             const handleUpdateMockTitle = (idx, val) => {
                 const current = mockTitles[subject] || ["", "", "", "", ""];
                 current[idx] = val;
@@ -610,6 +660,7 @@
                                 reportPeriod={reportPeriod} setReportPeriod={setReportPeriod}
                                 mockTitles={mockTitles[subject] || ["", "", "", "", ""]}
                                 onUpdateMockTitle={handleUpdateMockTitle}
+                                onDeleteSubject={handleDeleteSubject}
                             />
                         )}
 
