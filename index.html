@@ -61,7 +61,8 @@
         // --- CONSTANTS ---
         const HPL_LEVELS = ["Collaboration/Empathy", "Agile", "Hard Working"];
         const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
-        
+        const DEFAULT_LOGO_URL = "https://cdn-icons-png.flaticon.com/512/3665/3665939.png"; 
+
         // --- ICONS ---
         const Icon = ({ path, className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>;
         const Users = ({ className }) => <Icon className={className} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />;
@@ -98,15 +99,8 @@
 
         // --- COMPONENTS ---
 
-        const Header = ({ isConnected }) => {
-            const DEFAULT_LOGO = "https://cdn-icons-png.flaticon.com/512/3665/3665939.png"; 
-            const [logo, setLogo] = useState(DEFAULT_LOGO);
+        const Header = ({ isConnected, logo, onLogoUpdate }) => {
             const fileInputRef = useRef(null);
-
-            useEffect(() => {
-                const stored = localStorage.getItem('teacher_report_logo');
-                if (stored) setLogo(stored);
-            }, []);
 
             const handleFileChange = (e) => {
                 const file = e.target.files?.[0];
@@ -114,8 +108,7 @@
                     const reader = new FileReader();
                     reader.onloadend = () => {
                         const result = reader.result;
-                        setLogo(result);
-                        localStorage.setItem('teacher_report_logo', result);
+                        onLogoUpdate(result); // Update Shared DB
                     };
                     reader.readAsDataURL(file);
                 }
@@ -130,7 +123,7 @@
                             onClick={() => fileInputRef.current?.click()}
                             title="Click to change logo"
                         >
-                            <img src={logo} className="h-16 w-16 object-contain" alt="School Logo" />
+                            <img src={logo || DEFAULT_LOGO_URL} className="h-16 w-16 object-contain" alt="School Logo" />
                             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Camera className="w-6 h-6 text-white mb-1" />
                                 <span className="text-[10px] font-bold text-white uppercase">Change</span>
@@ -219,6 +212,7 @@
                 <div className="bg-white rounded-xl shadow-lg p-8 border-t-4 border-school-lightBlue animate-in">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">Class Setup</h2>
                     <div className="grid grid-cols-1 gap-8">
+                        {/* 1. SUBJECT SELECTION */}
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                 <Library className="w-4 h-4 text-school-lightBlue" /> 1. Select Subject (Shared Bank)
@@ -243,6 +237,8 @@
                                             <option value="__NEW__" className="font-bold text-school-lightBlue">+ Add New Subject...</option>
                                         </select>
                                     </div>
+                                    
+                                    {/* DELETE BUTTON */}
                                     {subject && subject !== "__NEW__" && (
                                         <button 
                                             onClick={onDeleteSubject}
@@ -256,6 +252,7 @@
                             )}
                         </div>
 
+                        {/* 2. REPORT PERIOD */}
                         <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                 <Calendar className="w-4 h-4 text-school-lightBlue" /> 2. Select Report Period
@@ -266,6 +263,7 @@
                                 ))}
                             </div>
                             
+                            {/* MOCKS CONFIG */}
                             {reportPeriod === "Mocks" && (
                                 <div className="bg-red-50 border border-red-100 rounded-lg p-4 mt-2">
                                     <h3 className="text-school-red font-bold text-sm mb-2">Configure Mock Categories (Shared)</h3>
@@ -277,6 +275,7 @@
                                 </div>
                             )}
 
+                            {/* YEAR 9 CONFIGURATION */}
                             {isYear9Config && reportPeriod !== "Mocks" && (
                                 <div className="bg-blue-50 border border-school-lightBlue/30 rounded-lg p-5 mt-4">
                                     <div className="flex items-center gap-2 mb-3">
@@ -286,6 +285,7 @@
                                     <p className="text-sm text-gray-600 mb-4">Assessment and Improvement are compulsory. Please select at least one optional category.</p>
                                     
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {/* COMPULSORY */}
                                         <label className="flex items-center gap-3 p-3 bg-gray-200 rounded-lg border border-gray-300 cursor-not-allowed opacity-70">
                                             <div className="w-5 h-5 bg-school-lightBlue text-white rounded flex items-center justify-center"><Check className="w-3 h-3"/></div>
                                             <span className="font-bold text-gray-700">Assessment (Compulsory)</span>
@@ -295,6 +295,7 @@
                                             <span className="font-bold text-gray-700">Improvement (Compulsory)</span>
                                         </label>
 
+                                        {/* OPTIONAL */}
                                         {["HPL", "Language", "Homework"].map(opt => (
                                             <label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedOptionals[opt] ? 'bg-white border-school-lightBlue shadow-sm' : 'bg-gray-50 border-transparent hover:bg-white'}`}>
                                                 <input 
@@ -311,6 +312,7 @@
                             )}
                         </div>
 
+                        {/* 3. STUDENTS */}
                         <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                 <Users className="w-4 h-4 text-school-lightBlue" /> 3. Enter Student Names (Your Session Only)
@@ -381,6 +383,7 @@
                                 </div>
                              </div>
 
+                             {/* ADD NEW INPUT */}
                              {isAdding && (
                                 <div className="flex gap-2">
                                     <input 
@@ -395,6 +398,7 @@
                                 </div>
                              )}
 
+                             {/* MANAGE MODE (List View) */}
                              {isManaging && (
                                 <div className="bg-gray-50 border rounded-lg p-2 max-h-48 overflow-y-auto custom-scrollbar">
                                     {activeOptions.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No comments yet.</p>}
@@ -425,6 +429,7 @@
                                 </div>
                              )}
 
+                             {/* SELECTION DROPDOWN (Normal Mode) */}
                              {!isManaging && (
                                 <div className="relative">
                                     <select 
@@ -432,6 +437,7 @@
                                         onChange={(e) => {
                                             const newVal = e.target.value;
                                             onChange(currentValue ? currentValue + " " + newVal : newVal);
+                                            // Ensure value resets visually (controlled component via value="")
                                         }}
                                         value="" 
                                     >
@@ -454,6 +460,7 @@
                         placeholder="Selected comments appear here..."
                     ></textarea>
                     
+                    {/* Clear Button */}
                     <div className="flex justify-end mt-1">
                         <button 
                             onClick={() => onChange("")} 
@@ -479,12 +486,14 @@
                         <h2 className="text-xl font-bold text-school-blue">Category: {category.label}</h2>
                         
                         <div className="flex gap-2">
+                            {/* Update All Subjects Button (Purple) */}
                             {isHPLOrLang && (
                                 <button onClick={onShareGlobal} className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white text-xs font-bold rounded shadow hover:bg-purple-700 transition">
                                     <Globe className="w-4 h-4"/> Update All Subjects
                                 </button>
                             )}
 
+                            {/* Share with P3 Button (Indigo) */}
                             {!isHPLOrLang && reportPeriod !== "Progress 3" && reportPeriod !== "Mocks" && (
                                 <button onClick={onShareP3} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded shadow hover:bg-indigo-700 transition">
                                     <Share className="w-4 h-4"/> Share with P3 Bank
@@ -578,6 +587,7 @@
             const [mockTitles, setMockTitles] = useState({});
             const [customBank, setCustomBank] = useState({});
             const [isConnected, setIsConnected] = useState(false);
+            const [sharedLogo, setSharedLogo] = useState(null);
 
             const [subject, setSubject] = useState("");
             const [students, setStudents] = useState([]);
@@ -595,13 +605,15 @@
                         setSubjectTypes(data.subjectTypes || {});
                         setMockTitles(data.mockTitles || {});
                         setCustomBank(data.customBank || {});
+                        if(data.logo) setSharedLogo(data.logo);
                         setIsConnected(true);
                     } else {
                         SHARED_DOC_REF.set({
                             customSubjects: [],
                             subjectTypes: {},
                             mockTitles: {},
-                            customBank: {}
+                            customBank: {},
+                            logo: null
                         });
                         setIsConnected(true);
                     }
@@ -803,7 +815,7 @@
 
             return (
                 <div className="min-h-screen bg-gray-50 pb-32">
-                    <Header isConnected={isConnected} />
+                    <Header isConnected={isConnected} logo={sharedLogo} onLogoUpdate={(l) => updateCloud('logo', l)} />
                     <main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
                         {isSetup && (
                             <ClassSetup
