@@ -57,19 +57,12 @@
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.firestore();
-        // This is the single "Shared Document" where all comments/subjects live
         const SHARED_DOC_REF = db.collection('app_data').doc('master_bank');
 
         // --- CONSTANTS & DEFAULTS ---
-        const HPL_HIGH_ADDITIONS = ["Consistently seeks out opportunities to contribute.", "Contributes thoughtfully to group work.", "Plays a valuable and empathetic role.", "Demonstrates confidence."];
-        const HPL_AVERAGE_ADDITIONS = ["A willing and able collaborative learner.", "Works effectively in teams.", "Presents their own views clearly."];
-        const HPL_LOW_ADDITIONS = ["Is developing their collaborative skills.", "Is beginning to recognise the value of collaboration.", "Would benefit from building confidence."];
-
-        const LANGUAGE_HIGH_ADDITIONS = [];
-        const LANGUAGE_AVERAGE_ADDITIONS = [];
-        const LANGUAGE_LOW_ADDITIONS = [];
-
         const HPL_ATTRIBUTES = { "Collaboration/Empathy": [], "Agile": [], "Hard Working": [] };
+        const HPL_LEVELS = ["Collaboration/Empathy", "Agile", "Hard Working"];
+        const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
 
         const DEFAULT_COMMENT_BANK = {
             "IB History": {
@@ -81,9 +74,6 @@
             }
         };
 
-        const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
-        const HPL_LEVELS = ["Collaboration/Empathy", "Agile", "Hard Working"];
-
         // --- ICONS ---
         const Icon = ({ path, className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>;
         const Users = ({ className }) => <Icon className={className} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />;
@@ -92,24 +82,7 @@
         const ArrowRight = ({ className }) => <Icon className={className} path={<><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>} />;
         const ArrowLeft = ({ className }) => <Icon className={className} path={<><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></>} />;
         const PlusCircle = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></>} />;
-        const X = ({ className }) => <Icon className={className} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />;
-        const Save = ({ className }) => <Icon className={className} path={<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>} />;
         const CheckCircle = ({ className }) => <Icon className={className} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />;
-        const CheckCircle2 = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
-        const MessageSquare = ({ className }) => <Icon className={className} path={<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>} />;
-        const Trash2 = ({ className }) => <Icon className={className} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />;
-        const Pencil = ({ className }) => <Icon className={className} path={<><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></>} />;
-        const Settings2 = ({ className }) => <Icon className={className} path={<><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></>} />;
-        const Share2 = ({ className }) => <Icon className={className} path={<><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></>} />;
-        const User = ({ className }) => <Icon className={className} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />;
-        const Copy = ({ className }) => <Icon className={className} path={<><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>} />;
-        const Check = ({ className }) => <Icon className={className} path={<><polyline points="20 6 9 17 4 12"/></>} />;
-        const Edit3 = ({ className }) => <Icon className={className} path={<><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>} />;
-        const Globe = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></>} />;
-        const Star = ({ className }) => <Icon className={className} path={<><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></>} />;
-        const ThumbsUp = ({ className }) => <Icon className={className} path={<><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></>} />;
-        const MinusCircle = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></>} />;
-        const AlertCircle = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>} />;
         const CloudCheck = ({ className }) => <Icon className={className} path={<><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 5.5-7.5"/><polyline points="8 15 12 19 16 15"/></>} />;
         const CloudOff = ({ className }) => <Icon className={className} path={<><line x1="1" y1="1" x2="23" y2="23"/><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 .68 8.44"/></>} />;
 
@@ -227,7 +200,6 @@
                                             <input key={idx} type="text" value={mockTitles?.[idx] || ""} onChange={(e) => onUpdateMockTitle && onUpdateMockTitle(idx, e.target.value)} placeholder={`Mock Category ${idx + 1}`} className="p-2 text-sm border border-red-200 rounded" />
                                         ))}
                                     </div>
-                                    <p className="text-xs text-red-400 mt-2">* Changes here update for all teachers</p>
                                 </div>
                             )}
                         </div>
@@ -247,6 +219,7 @@
             );
         };
 
+        // --- COMMENT CATEGORY COMPONENT (MODIFIED WITH DROPDOWN) ---
         const CommentCategory = ({ 
             category, optionsMap, currentValue, onChange, 
             onAddComment, onDeleteCustomComment, 
@@ -287,21 +260,29 @@
 
                              {isAdding && (
                                 <div className="flex gap-2">
-                                    <input type="text" value={newComment} onChange={(e)=>setNewText(e.target.value)} className="flex-1 border p-1 rounded text-sm" placeholder="Type shared comment..." autoFocus />
+                                    <input type="text" value={newComment} onChange={(e)=>setNewComment(e.target.value)} className="flex-1 border p-1 rounded text-sm" placeholder="Type shared comment..." autoFocus />
                                     <button onClick={handleSaveNewComment} className="bg-green-600 text-white px-2 rounded text-xs">Save</button>
                                 </div>
                              )}
 
+                             {/* --- THIS IS THE DROPDOWN MENU --- */}
                              <div className="relative">
-                                <select className="w-full p-2 border rounded-md bg-gray-50 text-sm" onChange={(e) => onChange(e.target.value)} value="">
-                                    <option value="" disabled>Select a comment...</option>
-                                    {activeOptions.map((opt, idx) => <option key={idx} value={opt}>{opt}</option>)}
+                                <select 
+                                    className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:ring-2 focus:ring-school-lightBlue outline-none"
+                                    onChange={(e) => onChange(e.target.value)}
+                                    value=""
+                                >
+                                    <option value="" disabled>▼ Select a {activeLevel} comment...</option>
+                                    {activeOptions.length === 0 && <option disabled>No comments yet - add one!</option>}
+                                    {activeOptions.map((opt, idx) => (
+                                        <option key={idx} value={opt}>{opt}</option>
+                                    ))}
                                 </select>
                              </div>
                         </div>
                     )}
                     
-                    <textarea rows={2} value={currentValue} onChange={(e) => onChange(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg text-sm" placeholder="Selected comment appears here..."></textarea>
+                    <textarea rows={2} value={currentValue} onChange={(e) => onChange(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg text-sm mt-2" placeholder="Selected comment appears here..."></textarea>
                 </div>
             );
         };
@@ -320,7 +301,7 @@
                             <div key={student} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                                 <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-2">
                                     <span className="bg-school-lightBlue text-white text-xs font-bold px-2 py-1 rounded-full">{index + 1}</span>
-                                    <h3 className="font-bold text-gray-800 flex items-center gap-2"><User className="w-4 h-4 text-gray-400" /> {student}</h3>
+                                    <h3 className="font-bold text-gray-800 flex items-center gap-2">{student}</h3>
                                 </div>
                                 <div className="p-2">
                                     <CommentCategory 
@@ -329,7 +310,6 @@
                                         currentValue={classData[student]?.[category.id] || ""} 
                                         onChange={(val) => onUpdateStudent(student, category.id, val)} 
                                         onAddComment={onAddCustomComment} 
-                                        onDeleteCustomComment={onDeleteCustomComment}
                                         levels={levels}
                                     />
                                 </div>
@@ -389,7 +369,6 @@
                         setCustomBank(data.customBank || DEFAULT_COMMENT_BANK);
                         setIsConnected(true);
                     } else {
-                        // First load - Initialize Cloud Data
                         SHARED_DOC_REF.set({
                             customSubjects: [],
                             subjectTypes: {},
@@ -405,7 +384,7 @@
                 return () => unsubscribe();
             }, []);
 
-            // --- 2. UPDATE HELPERS (WRITES TO CLOUD) ---
+            // --- 2. UPDATE HELPERS ---
             const updateCloud = (key, value) => {
                 SHARED_DOC_REF.update({ [key]: value }).catch(console.error);
             };
@@ -414,15 +393,12 @@
                 const updatedSubjects = [...customSubjects, newSubject];
                 const updatedTypes = { ...subjectTypes, [newSubject]: type };
                 
-                // Initialize bank for new subject if needed
                 let newBank = { ...customBank };
                 const sharedKey = `${newSubject}::SHARED`;
                 if (!newBank[sharedKey]) {
-                     // Create structure based on type
                      newBank[sharedKey] = {
                         "HPL": HPL_ATTRIBUTES,
                         "Language": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
-                         // Add default categories...
                         "Assessment": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
                         "Homework": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
                         "Improvement": { "Excellent": [], "Good": [], "Average": [], "Poor": [] }
@@ -448,7 +424,7 @@
 
             const handleAddCustomComment = (catId, text, level) => {
                 const key = getBankKey(catId);
-                const newBank = JSON.parse(JSON.stringify(customBank)); // Deep copy
+                const newBank = JSON.parse(JSON.stringify(customBank)); 
                 
                 if (!newBank[key]) newBank[key] = {};
                 if (!newBank[key][catId]) newBank[key][catId] = {};
@@ -460,7 +436,7 @@
                 }
             };
 
-            // --- 3. LOCAL LOGIC (SAME AS ORIGINAL APP) ---
+            // --- 3. LOCAL LOGIC ---
             const getCategories = () => {
                 if (reportPeriod === "Mocks") {
                     const titles = mockTitles[subject] || ["", "", "", "", ""];
@@ -491,7 +467,6 @@
                 const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
                 const map = {};
                 levels.forEach(l => {
-                    // Combine default bank + custom bank from cloud
                     const defaults = DEFAULT_COMMENT_BANK[subject]?.[catId]?.[l] || [];
                     const customs = customBank[key]?.[catId]?.[l] || [];
                     map[l] = [...defaults, ...customs];
