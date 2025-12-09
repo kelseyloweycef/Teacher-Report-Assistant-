@@ -83,6 +83,8 @@
         const Save = ({ className }) => <Icon className={className} path={<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>} />;
         const X = ({ className }) => <Icon className={className} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />;
         const Download = ({ className }) => <Icon className={className} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>} />;
+        const Check = ({ className }) => <Icon className={className} path={<><polyline points="20 6 9 17 4 12"/></>} />;
+        const Filter = ({ className }) => <Icon className={className} path={<><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>} />;
 
         const DEFAULT_COMMENT_BANK = {
             "IB History": {
@@ -160,6 +162,18 @@
             const [isCreatingSubject, setIsCreatingSubject] = useState(false);
             const [newSubjectName, setNewSubjectName] = useState("");
             const [newSubjectType, setNewSubjectType] = useState('full');
+            
+            // State for optional categories (Year 9 / Shared)
+            const [selectedOptionals, setSelectedOptionals] = useState({
+                "HPL": false,
+                "Language": false,
+                "Homework": false
+            });
+
+            // Reset optional selection when subject changes
+            useEffect(() => {
+                setSelectedOptionals({ "HPL": false, "Language": false, "Homework": false });
+            }, [subject]);
 
             const handleStart = () => {
                 const students = namesInput.split('\n').map(s => s.trim()).filter(s => s.length > 0);
@@ -167,7 +181,33 @@
                     alert("Please enter at least one student name.");
                     return;
                 }
-                onStartClass(students);
+                
+                // Build the category list based on logic
+                let finalCategories = [];
+                const isYear9 = subject.includes("Year 9") || newSubjectType === 'shared'; // Assuming 'shared' logic applies to Year 9 structure
+
+                if (reportPeriod === "Mocks") {
+                    finalCategories = mockTitles[subject]?.map((t, i) => ({ id: `Mock${i + 1}`, label: t.trim() })).filter(c => c.label.length > 0) || [];
+                } else if (isYear9) {
+                    // COMPULSORY FIRST
+                    finalCategories.push({id: "Assessment", label: "Assessment"});
+                    finalCategories.push({id: "Improvement", label: "Improvement"});
+                    // OPTIONAL NEXT
+                    if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "HPL"});
+                    if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
+                    if (selectedOptionals["Homework"]) finalCategories.push({id: "Homework", label: "Homework"});
+                } else {
+                    // Default Structure for other years
+                    finalCategories = [
+                        {id: "HPL", label: "HPL"},
+                        {id: "Language", label: "Language"},
+                        {id: "Assessment", label: "Assessment"},
+                        {id: "Homework", label: "Homework"},
+                        {id: "Improvement", label: "Improvement"}
+                    ];
+                }
+
+                onStartClass(students, finalCategories);
             };
 
             const handleSaveSubject = () => {
@@ -178,10 +218,14 @@
                 }
             };
 
+            const isYear9Config = subject && (subject.includes("Year 9") || (subjectOptions.find(s => s === subject) && subject.includes("Year 9")));
+            const hasSelectedOptional = Object.values(selectedOptionals).some(v => v);
+
             return (
                 <div className="bg-white rounded-xl shadow-lg p-8 border-t-4 border-school-lightBlue animate-in">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">Class Setup</h2>
                     <div className="grid grid-cols-1 gap-8">
+                        {/* 1. SUBJECT SELECTION */}
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                 <Library className="w-4 h-4 text-school-lightBlue" /> 1. Select Subject (Shared Bank)
@@ -191,17 +235,6 @@
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">New Subject Name</label>
                                     <input type="text" autoFocus value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} placeholder="e.g. Year 8 Science" className="w-full p-3 border border-school-lightBlue rounded-lg outline-none mb-4 bg-white" />
                                     
-                                    <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                                        <label className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border ${newSubjectType === 'full' ? 'bg-white border-school-lightBlue' : 'border-transparent'}`}>
-                                            <input type="radio" name="reportType" checked={newSubjectType === 'full'} onChange={() => setNewSubjectType('full')} className="w-4 h-4" />
-                                            <div className="flex flex-col"><span className="text-sm font-bold">Full Report</span><span className="text-xs text-gray-500">5 Categories</span></div>
-                                        </label>
-                                        <label className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border ${newSubjectType === 'shared' ? 'bg-white border-school-lightBlue' : 'border-transparent'}`}>
-                                            <input type="radio" name="reportType" checked={newSubjectType === 'shared'} onChange={() => setNewSubjectType('shared')} className="w-4 h-4" />
-                                            <div className="flex flex-col"><span className="text-sm font-bold">Shared Report</span><span className="text-xs text-gray-500">Year 9 Style</span></div>
-                                        </label>
-                                    </div>
-
                                     <div className="flex gap-2 justify-end">
                                         <button onClick={() => setIsCreatingSubject(false)} className="px-4 py-2 bg-white text-gray-600 border rounded-lg text-sm">Cancel</button>
                                         <button onClick={handleSaveSubject} className="px-4 py-2 bg-school-lightBlue text-white rounded-lg font-bold text-sm">Create & Sync</button>
@@ -217,8 +250,6 @@
                                             <option value="__NEW__" className="font-bold text-school-lightBlue">+ Add New Subject...</option>
                                         </select>
                                     </div>
-                                    
-                                    {/* DELETE BUTTON */}
                                     {subject && subject !== "__NEW__" && (
                                         <button 
                                             onClick={onDeleteSubject}
@@ -232,7 +263,7 @@
                             )}
                         </div>
 
-                        {/* Report Period */}
+                        {/* 2. REPORT PERIOD */}
                         <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                 <Calendar className="w-4 h-4 text-school-lightBlue" /> 2. Select Report Period
@@ -242,6 +273,8 @@
                                     <button key={p} onClick={() => setReportPeriod(p)} className={`p-4 rounded-lg border-2 font-bold ${reportPeriod === p ? 'border-school-lightBlue bg-school-lightBlue text-white' : 'border-gray-200 bg-gray-50 text-gray-600'}`}>{p}</button>
                                 ))}
                             </div>
+                            
+                            {/* MOCKS CONFIG */}
                             {reportPeriod === "Mocks" && (
                                 <div className="bg-red-50 border border-red-100 rounded-lg p-4 mt-2">
                                     <h3 className="text-school-red font-bold text-sm mb-2">Configure Mock Categories (Shared)</h3>
@@ -252,17 +285,58 @@
                                     </div>
                                 </div>
                             )}
+
+                            {/* YEAR 9 CONFIGURATION */}
+                            {isYear9Config && reportPeriod !== "Mocks" && (
+                                <div className="bg-blue-50 border border-school-lightBlue/30 rounded-lg p-5 mt-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Filter className="w-5 h-5 text-school-lightBlue" />
+                                        <h3 className="font-bold text-gray-800">Configure Year 9 Report Categories</h3>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-4">Assessment and Improvement are compulsory. Please select at least one optional category.</p>
+                                    
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {/* COMPULSORY */}
+                                        <label className="flex items-center gap-3 p-3 bg-gray-200 rounded-lg border border-gray-300 cursor-not-allowed opacity-70">
+                                            <div className="w-5 h-5 bg-school-lightBlue text-white rounded flex items-center justify-center"><Check className="w-3 h-3"/></div>
+                                            <span className="font-bold text-gray-700">Assessment (Compulsory)</span>
+                                        </label>
+                                        <label className="flex items-center gap-3 p-3 bg-gray-200 rounded-lg border border-gray-300 cursor-not-allowed opacity-70">
+                                            <div className="w-5 h-5 bg-school-lightBlue text-white rounded flex items-center justify-center"><Check className="w-3 h-3"/></div>
+                                            <span className="font-bold text-gray-700">Improvement (Compulsory)</span>
+                                        </label>
+
+                                        {/* OPTIONAL */}
+                                        {["HPL", "Language", "Homework"].map(opt => (
+                                            <label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedOptionals[opt] ? 'bg-white border-school-lightBlue shadow-sm' : 'bg-gray-50 border-transparent hover:bg-white'}`}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="w-5 h-5 text-school-lightBlue rounded focus:ring-school-lightBlue"
+                                                    checked={selectedOptionals[opt]}
+                                                    onChange={(e) => setSelectedOptionals({...selectedOptionals, [opt]: e.target.checked})}
+                                                />
+                                                <span className={`font-bold ${selectedOptionals[opt] ? 'text-school-blue' : 'text-gray-600'}`}>{opt} (Optional)</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Students */}
+                        {/* 3. STUDENTS */}
                         <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                 <Users className="w-4 h-4 text-school-lightBlue" /> 3. Enter Student Names (Your Session Only)
                             </label>
                             <textarea value={namesInput} onChange={(e) => setNamesInput(e.target.value)} placeholder="Alice Smith&#10;Bob Jones" className="w-full p-4 border border-gray-300 rounded-lg h-64" />
                         </div>
-                        <button onClick={handleStart} disabled={!subject || !namesInput.trim()} className="w-full bg-school-red text-white font-bold py-4 rounded-lg shadow-md hover:bg-school-redHover disabled:opacity-50 text-lg">
-                            Start Report Cycle <ArrowRight className="w-5 h-5 inline" />
+
+                        <button 
+                            onClick={handleStart} 
+                            disabled={!subject || !namesInput.trim() || (isYear9Config && reportPeriod !== "Mocks" && !hasSelectedOptional)} 
+                            className="w-full bg-school-red text-white font-bold py-4 rounded-lg shadow-md hover:bg-school-redHover disabled:opacity-50 disabled:cursor-not-allowed text-lg transition-all"
+                        >
+                            {isYear9Config && reportPeriod !== "Mocks" && !hasSelectedOptional ? "Select at least 1 optional category" : <span>Start Report Cycle <ArrowRight className="w-5 h-5 inline" /></span>}
                         </button>
                     </div>
                 </div>
@@ -278,7 +352,6 @@
             const [isManaging, setIsManaging] = useState(false);
             const [newComment, setNewComment] = useState("");
             
-            // Edit State
             const [editingText, setEditingText] = useState(null);
             const [editText, setEditText] = useState("");
 
@@ -375,7 +448,7 @@
                                         onChange={(e) => {
                                             const newVal = e.target.value;
                                             onChange(currentValue ? currentValue + " " + newVal : newVal);
-                                            // Ensure value resets visually (controlled component via value="")
+                                            // value reset handled by component re-render with value=""
                                         }}
                                         value="" 
                                     >
@@ -467,16 +540,11 @@
         };
 
         const ResultPanel = ({ prompt }) => {
-            
             const handleDownload = () => {
-                // Basic HTML wrapper for Word compatibility
                 const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Class Reports</title></head><body>";
                 const footer = "</body></html>";
-                
-                // Convert text \n to <br> for HTML
                 const htmlContent = prompt.replace(/\n/g, "<br>");
                 const sourceHTML = header + htmlContent + footer;
-                
                 const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
                 const fileDownload = document.createElement("a");
                 document.body.appendChild(fileDownload);
@@ -491,11 +559,8 @@
                     <div className="p-4 border-b bg-gray-50 font-bold text-gray-700 flex justify-between items-center">
                         <span>Generated Class Report Document</span>
                         <div className="flex gap-2">
-                            <button 
-                                onClick={handleDownload}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs font-bold"
-                            >
-                                <Download className="w-4 h-4" /> Download as Word Doc
+                            <button onClick={handleDownload} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs font-bold">
+                                <Icon className="w-4 h-4" path={<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>} /> Download as Word Doc
                             </button>
                         </div>
                     </div>
@@ -508,7 +573,6 @@
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-50">
                 <div className="max-w-5xl mx-auto flex justify-between gap-4">
                     <div className="flex gap-2">
-                        {/* RETURN TO START BUTTON */}
                         <button onClick={onReturnStart} className="flex items-center gap-2 px-4 py-3 rounded-lg font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors text-sm">
                             <RotateCcw className="w-4 h-4" /> Return to Start
                         </button>
@@ -537,6 +601,7 @@
             const [reportPeriod, setReportPeriod] = useState("Progress 2");
             const [classData, setClassData] = useState({});
             const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
+            const [activeCategories, setActiveCategories] = useState([]);
 
             useEffect(() => {
                 const unsubscribe = SHARED_DOC_REF.onSnapshot((doc) => {
@@ -592,7 +657,6 @@
                 setSubject(newSubject);
             };
 
-            // --- DELETE SUBJECT LOGIC ---
             const handleDeleteSubject = () => {
                 if (!subject || subject === "__NEW__") return;
 
@@ -625,9 +689,8 @@
 
             const getBankKey = (catId) => (catId === 'HPL' || catId === 'Language') ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
 
-            // --- COMMENT MANAGEMENT FUNCTIONS ---
             const handleAddCustomComment = (level, text) => {
-                const catId = categories[currentStepIndex].id;
+                const catId = activeCategories[currentStepIndex].id;
                 const key = getBankKey(catId);
                 const newBank = JSON.parse(JSON.stringify(customBank)); 
                 
@@ -642,7 +705,7 @@
             };
 
             const handleEditComment = (level, oldText, newText) => {
-                const catId = categories[currentStepIndex].id;
+                const catId = activeCategories[currentStepIndex].id;
                 const key = getBankKey(catId);
                 const newBank = JSON.parse(JSON.stringify(customBank));
                 
@@ -655,7 +718,7 @@
             };
 
             const handleDeleteComment = (level, text) => {
-                const catId = categories[currentStepIndex].id;
+                const catId = activeCategories[currentStepIndex].id;
                 const key = getBankKey(catId);
                 const newBank = JSON.parse(JSON.stringify(customBank));
                 
@@ -713,25 +776,9 @@
                 alert("Shared to Progress 3 Bank!");
             };
 
-            const getCategories = () => {
-                if (reportPeriod === "Mocks") {
-                    const titles = mockTitles[subject] || ["", "", "", "", ""];
-                    return titles.map((t, i) => ({ id: `Mock${i + 1}`, label: t.trim() })).filter(c => c.label.length > 0);
-                }
-                const isShared = subjectTypes[subject] === 'shared';
-                if (isShared || subject.includes("Year 9")) {
-                    return [{id: "Assessment", label: "Assessment"}, {id: "Improvement", label: "Improvement"}, {id: "HPL", label: "HPL (Optional)"}, {id: "Language", label: "Language"}];
-                }
-                return [{id: "HPL", label: "HPL"}, {id: "Language", label: "Language"}, {id: "Assessment", label: "Assessment"}, {id: "Homework", label: "Homework"}, {id: "Improvement", label: "Improvement"}];
-            };
-
-            const categories = subject ? getCategories() : [];
-            const isSetup = students.length === 0;
-            const isResultStep = !isSetup && currentStepIndex === categories.length;
-            const activeCategory = (!isSetup && !isResultStep) ? categories[currentStepIndex] : null;
-
-            const handleStartClass = (names) => {
+            const handleStartClass = (names, categories) => {
                 setStudents(names);
+                setActiveCategories(categories);
                 const initData = {};
                 names.forEach(n => initData[n] = {});
                 setClassData(initData);
@@ -758,13 +805,17 @@
                 let out = "";
                 students.forEach(s => {
                     out += `${s}\n`;
-                    categories.forEach(c => {
+                    activeCategories.forEach(c => {
                         if (classData[s]?.[c.id]) out += `• ${classData[s][c.id].trim()}\n`;
                     });
                     out += `\n-----------------------------------\n\n`;
                 });
                 setFinalBatchPrompt(out);
             };
+
+            const isSetup = students.length === 0;
+            const isResultStep = !isSetup && currentStepIndex === activeCategories.length;
+            const activeCategory = (!isSetup && !isResultStep) ? activeCategories[currentStepIndex] : null;
 
             return (
                 <div className="min-h-screen bg-gray-50 pb-32">
@@ -825,11 +876,11 @@
                                 }
                             }}
                             onNext={() => {
-                                if (currentStepIndex === categories.length - 1) generateFinalBatch();
+                                if (currentStepIndex === activeCategories.length - 1) generateFinalBatch();
                                 setCurrentStepIndex(currentStepIndex + 1);
                                 window.scrollTo(0,0);
                             }}
-                            isLastStep={currentStepIndex === categories.length - 1}
+                            isLastStep={currentStepIndex === activeCategories.length - 1}
                         />
                     )}
                 </div>
