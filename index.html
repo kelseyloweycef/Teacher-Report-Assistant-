@@ -41,7 +41,7 @@
     <script type="text/babel" data-presets="typescript,react">
         const { useState, useEffect, useRef } = React;
 
-        // --- 1. FIREBASE CONFIGURATION (Your Keys) ---
+        // --- 1. FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyBzIP_EWP8o73U6W0xfeTFVriWopjzgrCE",
             authDomain: "reports-shared-app.firebaseapp.com",
@@ -52,14 +52,13 @@
             measurementId: "G-QECHCQCZ0C"
         };
 
-        // Initialize Shared Database
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.firestore();
         const SHARED_DOC_REF = db.collection('app_data').doc('master_bank');
 
-        // --- CONSTANTS & DEFAULTS ---
+        // --- CONSTANTS ---
         const HPL_ATTRIBUTES = { "Collaboration/Empathy": [], "Agile": [], "Hard Working": [] };
         const HPL_LEVELS = ["Collaboration/Empathy", "Agile", "Hard Working"];
         const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
@@ -85,18 +84,48 @@
         const CheckCircle = ({ className }) => <Icon className={className} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />;
         const CloudCheck = ({ className }) => <Icon className={className} path={<><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 5.5-7.5"/><polyline points="8 15 12 19 16 15"/></>} />;
         const CloudOff = ({ className }) => <Icon className={className} path={<><line x1="1" y1="1" x2="23" y2="23"/><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 .68 8.44"/></>} />;
+        const Upload = ({ className }) => <Icon className={className} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></>} />;
+        const Globe = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></>} />;
+        const Share = ({ className }) => <Icon className={className} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></>} />;
 
         // --- COMPONENTS ---
 
         const Header = ({ isConnected }) => {
-            const DEFAULT_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAbFBMVEX///8Amf8AlP8Alv8Alf8Alf8Alv8Alf8Alv8Alv8AmP8Alv8Alf8Alv8Alv8Alv8Alf8Alv8Alf8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv98W13UAAAIGElEQVR4nO2da3uqOhCGRQXkIiJ4QcW2ttb+/5/4mAnJTYIkA4rtvT7vD61FA5NJJpNkxkwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGP5/6C8X/W0f4fs47/t+3w/8Yd/3/aHv+4Hze9uH+h6a9h+Xy+V6vV4ul8v1et1f2z7Y99Bf2z7M93G5Xq/76/V6uV6v++v1erleb/sI38nlcrnebvvr9Xq5Xm/76/VyuV6vtxv/5XK9Xm/X6+V6vV6v1+v1cr1eb9fr5Xq9Xm/X6+V6vV6v1+vler1eb9fr5Xq9Xm/X6+V6vV6v1+v1er1erter1Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr";
+            const DEFAULT_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAbFBMVEX///8Amf8AlP8Alv8Alf8Alf8Alv8Alf8Alv8Alv8AmP8Alv8Alf8Alv8Alv8Alv8Alf8Alv8Alf8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv98W13UAAAIGElEQVR4nO2da3uqOhCGRQXkIiJ4QcW2ttb+/5/4mAnJTYIkA4rtvT7vD61FA5NJJpNkxkwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGP5/6C8X/W0f4fs47/t+3w/8Yd/3/aHv+4Hze9uH+h6a9h+Xy+V6vV4ul8v1et1f2z7Y99Bf2z7M93G5Xq/76/V6uV6v++v1erleb/sI38nlcrnebvvr9Xq5Xm/76/VyuV6vtxv/5XK9Xm/X6+V6vV6v1+v1cr1eb9fr5Xq9Xm/X6+V6vV6v1+vler1eb9fr5Xq9Xm/X6+V6vV6v1+v1er1erter1Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr";
             
+            const [logo, setLogo] = useState(DEFAULT_LOGO);
+            const fileInputRef = useRef(null);
+
+            useEffect(() => {
+                const stored = localStorage.getItem('teacher_report_logo');
+                if (stored) setLogo(stored);
+            }, []);
+
+            const handleFileChange = (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const result = reader.result;
+                        setLogo(result);
+                        localStorage.setItem('teacher_report_logo', result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
             return (
                 <div className="bg-school-blue text-white pt-8 pb-16 px-6 shadow-md border-b-4 border-school-lightBlue">
                   <div className="max-w-5xl mx-auto flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                        <div className="bg-white p-2 rounded-lg shadow-sm overflow-hidden">
-                            <img src={DEFAULT_LOGO} className="h-16 w-auto min-w-[64px] object-contain max-w-[200px]" alt="School Logo" />
+                        <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()} title="Click to change logo">
+                            <div className="bg-white p-2 rounded-lg shadow-sm overflow-hidden">
+                                <img src={logo} className="h-16 w-auto min-w-[64px] object-contain max-w-[200px]" alt="School Logo" />
+                            </div>
+                            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-white text-xs font-bold px-2 py-1 bg-black/20 rounded">Change</span>
+                            </div>
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                         </div>
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight text-white">Teacher Report Assistant</h1>
@@ -219,7 +248,6 @@
             );
         };
 
-        // --- COMMENT CATEGORY COMPONENT (MODIFIED WITH DROPDOWN) ---
         const CommentCategory = ({ 
             category, optionsMap, currentValue, onChange, 
             onAddComment, onDeleteCustomComment, 
@@ -260,12 +288,11 @@
 
                              {isAdding && (
                                 <div className="flex gap-2">
-                                    <input type="text" value={newComment} onChange={(e)=>setNewComment(e.target.value)} className="flex-1 border p-1 rounded text-sm" placeholder="Type shared comment..." autoFocus />
+                                    <input type="text" value={newComment} onChange={(e)=>setNewText(e.target.value)} className="flex-1 border p-1 rounded text-sm" placeholder="Type shared comment..." autoFocus />
                                     <button onClick={handleSaveNewComment} className="bg-green-600 text-white px-2 rounded text-xs">Save</button>
                                 </div>
                              )}
 
-                             {/* --- THIS IS THE DROPDOWN MENU --- */}
                              <div className="relative">
                                 <select 
                                     className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:ring-2 focus:ring-school-lightBlue outline-none"
@@ -289,13 +316,33 @@
 
         const BatchStep = ({ 
             category, students, classData, optionsMap, 
-            onUpdateStudent, onAddCustomComment, onDeleteCustomComment, levels
+            onUpdateStudent, onAddCustomComment, levels,
+            onShareGlobal, onShareP3, reportPeriod
         }) => {
+            const isHPLOrLang = category.id === 'HPL' || category.id === 'Language';
+            
             return (
                 <div className="space-y-8 animate-in">
-                    <div className="bg-blue-50 border-l-4 border-school-lightBlue p-4 rounded-r-lg mb-6">
+                    <div className="bg-blue-50 border-l-4 border-school-lightBlue p-4 rounded-r-lg mb-6 flex justify-between items-center flex-wrap gap-4">
                         <h2 className="text-xl font-bold text-school-blue">Category: {category.label}</h2>
+                        
+                        <div className="flex gap-2">
+                            {/* Update All Subjects Button */}
+                            {isHPLOrLang && (
+                                <button onClick={onShareGlobal} className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white text-xs font-bold rounded shadow hover:bg-purple-700 transition">
+                                    <Globe className="w-4 h-4"/> Update for All Subjects
+                                </button>
+                            )}
+
+                            {/* Share with P3 Button */}
+                            {!isHPLOrLang && reportPeriod !== "Progress 3" && reportPeriod !== "Mocks" && (
+                                <button onClick={onShareP3} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded shadow hover:bg-indigo-700 transition">
+                                    <Share className="w-4 h-4"/> Share with P3 Bank
+                                </button>
+                            )}
+                        </div>
                     </div>
+                    
                     <div className="grid grid-cols-1 gap-6">
                         {students.map((student, index) => (
                             <div key={student} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -436,6 +483,58 @@
                 }
             };
 
+            // --- SHARE BUTTON LOGIC ---
+            const handleShareGlobal = (catId) => {
+                if (!confirm(`Update ${catId} comments for ALL subjects?`)) return;
+                
+                const sourceKey = `${subject}::SHARED`;
+                const sourceData = customBank[sourceKey]?.[catId];
+                if (!sourceData) return alert("No comments to share.");
+
+                const newBank = JSON.parse(JSON.stringify(customBank));
+                const allSubjects = [...Object.keys(DEFAULT_COMMENT_BANK), ...customSubjects];
+                const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
+
+                allSubjects.forEach(targetSubj => {
+                    const targetKey = `${targetSubj}::SHARED`;
+                    if (!newBank[targetKey]) newBank[targetKey] = {};
+                    if (!newBank[targetKey][catId]) newBank[targetKey][catId] = {};
+
+                    levels.forEach(lvl => {
+                        const existing = newBank[targetKey][catId][lvl] || [];
+                        const incoming = sourceData[lvl] || [];
+                        // Union to prevent duplicates
+                        newBank[targetKey][catId][lvl] = Array.from(new Set([...existing, ...incoming]));
+                    });
+                });
+
+                updateCloud('customBank', newBank);
+                alert("Shared successfully across all subjects!");
+            };
+
+            const handleShareP3 = (catId) => {
+                if (!confirm(`Copy ${catId} comments to ${subject} Progress 3 Bank?`)) return;
+
+                const sourceKey = `${subject}::${reportPeriod}`;
+                const targetKey = `${subject}::Progress 3`;
+                const sourceData = customBank[sourceKey]?.[catId];
+                if (!sourceData) return alert("No comments to share.");
+
+                const newBank = JSON.parse(JSON.stringify(customBank));
+                if (!newBank[targetKey]) newBank[targetKey] = {};
+                if (!newBank[targetKey][catId]) newBank[targetKey][catId] = {};
+
+                STANDARD_LEVELS.forEach(lvl => {
+                    const existing = newBank[targetKey][catId][lvl] || [];
+                    const incoming = sourceData[lvl] || [];
+                    newBank[targetKey][catId][lvl] = Array.from(new Set([...existing, ...incoming]));
+                });
+
+                updateCloud('customBank', newBank);
+                alert("Shared to Progress 3 Bank!");
+            };
+
+
             // --- 3. LOCAL LOGIC ---
             const getCategories = () => {
                 if (reportPeriod === "Mocks") {
@@ -515,6 +614,9 @@
                                 onUpdateStudent={handleUpdateStudent}
                                 onAddCustomComment={handleAddCustomComment}
                                 levels={(activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS}
+                                onShareGlobal={() => handleShareGlobal(activeCategory.id)}
+                                onShareP3={() => handleShareP3(activeCategory.id)}
+                                reportPeriod={reportPeriod}
                             />
                         )}
 
