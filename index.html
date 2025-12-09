@@ -59,20 +59,9 @@
         const SHARED_DOC_REF = db.collection('app_data').doc('master_bank');
 
         // --- CONSTANTS ---
-        const HPL_ATTRIBUTES = { "Collaboration/Empathy": [], "Agile": [], "Hard Working": [] };
         const HPL_LEVELS = ["Collaboration/Empathy", "Agile", "Hard Working"];
         const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
-
-        const DEFAULT_COMMENT_BANK = {
-            "IB History": {
-                "HPL": HPL_ATTRIBUTES,
-                "Language": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
-                "Assessment": { "Excellent": ["Demonstrates excellent grasp of key concepts."], "Good": ["Shows good understanding."], "Average": ["Shows basic understanding."], "Poor": ["Limited understanding."] },
-                "Homework": { "Excellent": ["Consistently completes homework."], "Good": ["Regularly completes tasks."], "Average": ["Usually completes tasks."], "Poor": ["Inconsistent."] },
-                "Improvement": { "Excellent": ["Refine essay introductions."], "Good": ["Add critical depth."], "Average": ["Add critical depth."], "Poor": ["Develop clearer arguments."] }
-            }
-        };
-
+        
         // --- ICONS ---
         const Icon = ({ path, className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>;
         const Users = ({ className }) => <Icon className={className} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />;
@@ -84,14 +73,14 @@
         const CheckCircle = ({ className }) => <Icon className={className} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />;
         const CloudCheck = ({ className }) => <Icon className={className} path={<><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 5.5-7.5"/><polyline points="8 15 12 19 16 15"/></>} />;
         const CloudOff = ({ className }) => <Icon className={className} path={<><line x1="1" y1="1" x2="23" y2="23"/><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 .68 8.44"/></>} />;
-        const Upload = ({ className }) => <Icon className={className} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></>} />;
         const Globe = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></>} />;
         const Share = ({ className }) => <Icon className={className} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></>} />;
+        const Camera = ({ className }) => <Icon className={className} path={<><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></>} />;
 
         // --- COMPONENTS ---
 
         const Header = ({ isConnected }) => {
-            const DEFAULT_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAbFBMVEX///8Amf8AlP8Alv8Alf8Alf8Alv8Alf8Alv8Alv8AmP8Alv8Alf8Alv8Alv8Alv8Alf8Alv8Alf8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv98W13UAAAIGElEQVR4nO2da3uqOhCGRQXkIiJ4QcW2ttb+/5/4mAnJTYIkA4rtvT7vD61FA5NJJpNkxkwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGP5/6C8X/W0f4fs47/t+3w/8Yd/3/aHv+4Hze9uH+h6a9h+Xy+V6vV4ul8v1et1f2z7Y99Bf2z7M93G5Xq/76/V6uV6v++v1erleb/sI38nlcrnebvvr9Xq5Xm/76/VyuV6vtxv/5XK9Xm/X6+V6vV6v1+v1cr1eb9fr5Xq9Xm/X6+V6vV6v1+vler1eb9fr5Xq9Xm/X6+V6vV6v1+v1er1erter1Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr";
+            const DEFAULT_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAbFBMVEX///8Amf8AlP8Alv8Alf8Alf8Alv8Alf8Alv8Alv8AmP8Alv8Alf8Alv8Alv8Alv8Alf8Alv8Alf8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv8Alv98W13UAAAIGElEQVR4nO2da3uqOhCGRQXkIiJ4QcW2ttb+/5/4mAnJTYIkA4rtvT7vD61FA5NJJpNkxkwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGAwGg8FgMBgMBoPBYDAYDAaDwWAwGP5/6C8X/W0f4fs47/t+3w/8Yd/3/aHv+4Hze9uH+h6a9h+Xy+V6vV4ul8v1et1f2z7Y99Bf2z7M93G5Xq/76/V6uV6v++v1erleb/sI38nlcrnebvvr9Xq5Xm/76/VyuV6vtxv/5XK9Xm/X6+V6vV6v1+v1cr1eb9fr5Xq9Xm/X6+V6vV6v1+vler1eb9fr5Xq9Xm/X6+V6vV6v1+v1er1erter1Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr9Xq9Xq/X6/V6vV6v1+v1er1er9fr";
             
             const [logo, setLogo] = useState(DEFAULT_LOGO);
             const fileInputRef = useRef(null);
@@ -118,12 +107,16 @@
                 <div className="bg-school-blue text-white pt-8 pb-16 px-6 shadow-md border-b-4 border-school-lightBlue">
                   <div className="max-w-5xl mx-auto flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                        <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()} title="Click to change logo">
-                            <div className="bg-white p-2 rounded-lg shadow-sm overflow-hidden">
-                                <img src={logo} className="h-16 w-auto min-w-[64px] object-contain max-w-[200px]" alt="School Logo" />
-                            </div>
-                            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span className="text-white text-xs font-bold px-2 py-1 bg-black/20 rounded">Change</span>
+                        <div 
+                            className="bg-white p-2 rounded-lg shadow-sm overflow-hidden relative group cursor-pointer hover:ring-2 ring-school-lightBlue transition" 
+                            onClick={() => fileInputRef.current?.click()}
+                            title="Click to change logo"
+                        >
+                            <img src={logo} className="h-16 w-auto min-w-[64px] object-contain max-w-[200px]" alt="School Logo" />
+                            {/* Logo Hover Overlay */}
+                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Camera className="w-6 h-6 text-white mb-1" />
+                                <span className="text-[10px] font-bold text-white uppercase">Change</span>
                             </div>
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                         </div>
@@ -250,8 +243,7 @@
 
         const CommentCategory = ({ 
             category, optionsMap, currentValue, onChange, 
-            onAddComment, onDeleteCustomComment, 
-            levels
+            onAddComment, levels
         }) => {
             const [activeLevel, setActiveLevel] = useState(null);
             const [isAdding, setIsAdding] = useState(false);
@@ -288,7 +280,7 @@
 
                              {isAdding && (
                                 <div className="flex gap-2">
-                                    <input type="text" value={newComment} onChange={(e)=>setNewText(e.target.value)} className="flex-1 border p-1 rounded text-sm" placeholder="Type shared comment..." autoFocus />
+                                    <input type="text" value={newComment} onChange={(e)=>setNewComment(e.target.value)} className="flex-1 border p-1 rounded text-sm" placeholder="Type shared comment..." autoFocus />
                                     <button onClick={handleSaveNewComment} className="bg-green-600 text-white px-2 rounded text-xs">Save</button>
                                 </div>
                              )}
@@ -327,14 +319,14 @@
                         <h2 className="text-xl font-bold text-school-blue">Category: {category.label}</h2>
                         
                         <div className="flex gap-2">
-                            {/* Update All Subjects Button */}
+                            {/* Update All Subjects Button (Purple) */}
                             {isHPLOrLang && (
                                 <button onClick={onShareGlobal} className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white text-xs font-bold rounded shadow hover:bg-purple-700 transition">
-                                    <Globe className="w-4 h-4"/> Update for All Subjects
+                                    <Globe className="w-4 h-4"/> Update All Subjects
                                 </button>
                             )}
 
-                            {/* Share with P3 Button */}
+                            {/* Share with P3 Button (Indigo) */}
                             {!isHPLOrLang && reportPeriod !== "Progress 3" && reportPeriod !== "Mocks" && (
                                 <button onClick={onShareP3} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded shadow hover:bg-indigo-700 transition">
                                     <Share className="w-4 h-4"/> Share with P3 Bank
@@ -390,14 +382,12 @@
         );
 
         const App = () => {
-            // --- SHARED STATE (FROM FIREBASE) ---
             const [customSubjects, setCustomSubjects] = useState([]);
             const [subjectTypes, setSubjectTypes] = useState({});
             const [mockTitles, setMockTitles] = useState({});
             const [customBank, setCustomBank] = useState({});
             const [isConnected, setIsConnected] = useState(false);
 
-            // --- LOCAL STATE (SESSION) ---
             const [subject, setSubject] = useState("");
             const [students, setStudents] = useState([]);
             const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -405,7 +395,6 @@
             const [classData, setClassData] = useState({});
             const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
 
-            // --- 1. FIREBASE SYNC ---
             useEffect(() => {
                 const unsubscribe = SHARED_DOC_REF.onSnapshot((doc) => {
                     if (doc.exists) {
@@ -413,14 +402,14 @@
                         setCustomSubjects(data.customSubjects || []);
                         setSubjectTypes(data.subjectTypes || {});
                         setMockTitles(data.mockTitles || {});
-                        setCustomBank(data.customBank || DEFAULT_COMMENT_BANK);
+                        setCustomBank(data.customBank || {});
                         setIsConnected(true);
                     } else {
                         SHARED_DOC_REF.set({
                             customSubjects: [],
                             subjectTypes: {},
                             mockTitles: {},
-                            customBank: DEFAULT_COMMENT_BANK
+                            customBank: {}
                         });
                         setIsConnected(true);
                     }
@@ -431,7 +420,6 @@
                 return () => unsubscribe();
             }, []);
 
-            // --- 2. UPDATE HELPERS ---
             const updateCloud = (key, value) => {
                 SHARED_DOC_REF.update({ [key]: value }).catch(console.error);
             };
@@ -444,7 +432,7 @@
                 const sharedKey = `${newSubject}::SHARED`;
                 if (!newBank[sharedKey]) {
                      newBank[sharedKey] = {
-                        "HPL": HPL_ATTRIBUTES,
+                        "HPL": { "Collaboration/Empathy": [], "Agile": [], "Hard Working": [] },
                         "Language": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
                         "Assessment": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
                         "Homework": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
@@ -483,7 +471,6 @@
                 }
             };
 
-            // --- SHARE BUTTON LOGIC ---
             const handleShareGlobal = (catId) => {
                 if (!confirm(`Update ${catId} comments for ALL subjects?`)) return;
                 
@@ -492,7 +479,7 @@
                 if (!sourceData) return alert("No comments to share.");
 
                 const newBank = JSON.parse(JSON.stringify(customBank));
-                const allSubjects = [...Object.keys(DEFAULT_COMMENT_BANK), ...customSubjects];
+                const allSubjects = [...customSubjects]; 
                 const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
 
                 allSubjects.forEach(targetSubj => {
@@ -503,7 +490,6 @@
                     levels.forEach(lvl => {
                         const existing = newBank[targetKey][catId][lvl] || [];
                         const incoming = sourceData[lvl] || [];
-                        // Union to prevent duplicates
                         newBank[targetKey][catId][lvl] = Array.from(new Set([...existing, ...incoming]));
                     });
                 });
@@ -534,8 +520,6 @@
                 alert("Shared to Progress 3 Bank!");
             };
 
-
-            // --- 3. LOCAL LOGIC ---
             const getCategories = () => {
                 if (reportPeriod === "Mocks") {
                     const titles = mockTitles[subject] || ["", "", "", "", ""];
@@ -566,9 +550,8 @@
                 const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
                 const map = {};
                 levels.forEach(l => {
-                    const defaults = DEFAULT_COMMENT_BANK[subject]?.[catId]?.[l] || [];
                     const customs = customBank[key]?.[catId]?.[l] || [];
-                    map[l] = [...defaults, ...customs];
+                    map[l] = [...customs];
                 });
                 return map;
             };
@@ -596,7 +579,7 @@
                         {isSetup && (
                             <ClassSetup
                                 subject={subject} setSubject={setSubject}
-                                subjectOptions={[...Object.keys(DEFAULT_COMMENT_BANK), ...customSubjects]}
+                                subjectOptions={[...customSubjects]}
                                 onStartClass={handleStartClass}
                                 onAddSubject={handleAddSubject}
                                 reportPeriod={reportPeriod} setReportPeriod={setReportPeriod}
