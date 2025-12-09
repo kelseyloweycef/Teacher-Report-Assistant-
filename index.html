@@ -366,13 +366,17 @@
                                 </div>
                              )}
 
-                             {/* SELECTION DROPDOWN (Normal Mode) */}
+                             {/* SELECTION DROPDOWN (Normal Mode) - Auto Reset */}
                              {!isManaging && (
                                 <div className="relative">
                                     <select 
                                         className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:ring-2 focus:ring-school-lightBlue outline-none"
-                                        onChange={(e) => onChange(currentValue ? currentValue + " " + e.target.value : e.target.value)}
-                                        value=""
+                                        onChange={(e) => {
+                                            const newVal = e.target.value;
+                                            onChange(currentValue ? currentValue + " " + newVal : newVal);
+                                            // Ensure value resets visually (controlled component via value="")
+                                        }}
+                                        value="" // Controlled to always reset
                                     >
                                         <option value="" disabled>▼ Select a comment to add...</option>
                                         {activeOptions.length === 0 && <option disabled>No comments available</option>}
@@ -390,7 +394,7 @@
                         value={currentValue} 
                         readOnly={true}
                         className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-gray-50 cursor-not-allowed" 
-                        placeholder="Select comments from the bank above..."
+                        placeholder="Selected comments appear here..."
                     ></textarea>
                     
                     {/* Clear Button */}
@@ -558,6 +562,7 @@
                 setSubject(newSubject);
             };
 
+            // --- DELETE SUBJECT LOGIC ---
             const handleDeleteSubject = () => {
                 if (!subject || subject === "__NEW__") return;
 
@@ -590,6 +595,7 @@
 
             const getBankKey = (catId) => (catId === 'HPL' || catId === 'Language') ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
 
+            // --- COMMENT MANAGEMENT FUNCTIONS ---
             const handleAddCustomComment = (level, text) => {
                 const catId = categories[currentStepIndex].id;
                 const key = getBankKey(catId);
