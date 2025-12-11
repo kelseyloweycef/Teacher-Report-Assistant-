@@ -61,7 +61,8 @@
         // --- CONSTANTS ---
         const HPL_LEVELS = ["Collaboration/Empathy", "Agile", "Hard Working"];
         const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
-        const DEPARTMENTS = ["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"];
+        
+        const DEFAULT_DEPARTMENTS = ["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"];
 
         const DEFAULT_SUBJECT_DEPARTMENTS = {
             "IB History": "Social Studies",
@@ -156,9 +157,9 @@
         };
 
         const ClassSetup = ({ 
-            subject, setSubject, subjectOptions, department, setDepartment, subjectDepartments, onStartClass, 
+            subject, setSubject, subjectOptions, department, setDepartment, departments, subjectDepartments, onStartClass, 
             onAddSubject, reportPeriod, setReportPeriod, 
-            mockTitles, onUpdateMockTitle, onDeleteSubject 
+            mockTitles, onUpdateMockTitle, onDeleteSubject, onDeleteDepartment 
         }) => {
             const [namesInput, setNamesInput] = useState("");
             const [isCreatingSubject, setIsCreatingSubject] = useState(false);
@@ -232,14 +233,25 @@
                              <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                 <Briefcase className="w-4 h-4 text-school-lightBlue" /> 1. Select Department
                             </label>
-                            <select 
-                                value={department} 
-                                onChange={(e) => { setDepartment(e.target.value); setSubject(""); setIsCreatingSubject(false); }} 
-                                className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg cursor-pointer"
-                            >
-                                <option value="">-- Choose Department --</option>
-                                {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                            </select>
+                            <div className="flex gap-2 items-center">
+                                <select 
+                                    value={department} 
+                                    onChange={(e) => { setDepartment(e.target.value); setSubject(""); setIsCreatingSubject(false); }} 
+                                    className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg cursor-pointer"
+                                >
+                                    <option value="">-- Choose Department --</option>
+                                    {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                                </select>
+                                {department && (
+                                    <button 
+                                        onClick={() => onDeleteDepartment(department)}
+                                        className="p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
+                                        title="Delete this department"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* 2. SUBJECT SELECTION */}
@@ -283,10 +295,10 @@
                                     {subject && subject !== "__NEW__" && (
                                         <button 
                                             onClick={onDeleteSubject}
-                                            className="px-4 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200 flex items-center gap-2 font-bold whitespace-nowrap"
+                                            className="p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
                                             title="Permanently delete this subject"
                                         >
-                                            <Trash2 className="w-5 h-5" /> Delete Subject
+                                            <Trash2 className="w-5 h-5" />
                                         </button>
                                     )}
                                 </div>
@@ -326,6 +338,7 @@
                                     <p className="text-sm text-gray-600 mb-4">Assessment and Improvement are compulsory. Please select at least one optional category.</p>
                                     
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {/* COMPULSORY */}
                                         <label className="flex items-center gap-3 p-3 bg-gray-200 rounded-lg border border-gray-300 cursor-not-allowed opacity-70">
                                             <div className="w-5 h-5 bg-school-lightBlue text-white rounded flex items-center justify-center"><Check className="w-3 h-3"/></div>
                                             <span className="font-bold text-gray-700">Assessment (Compulsory)</span>
@@ -335,6 +348,7 @@
                                             <span className="font-bold text-gray-700">Improvement (Compulsory)</span>
                                         </label>
 
+                                        {/* OPTIONAL */}
                                         {["HPL", "Language", "Homework"].map(opt => (
                                             <label key={opt} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedOptionals[opt] ? 'bg-white border-school-lightBlue shadow-sm' : 'bg-gray-50 border-transparent hover:bg-white'}`}>
                                                 <input 
@@ -380,6 +394,7 @@
             const [isManaging, setIsManaging] = useState(false);
             const [newComment, setNewComment] = useState("");
             
+            // Edit State
             const [editingText, setEditingText] = useState(null);
             const [editText, setEditText] = useState("");
 
@@ -628,6 +643,7 @@
             const [isConnected, setIsConnected] = useState(false);
             const [sharedLogo, setSharedLogo] = useState(null);
             const [subjectDepartments, setSubjectDepartments] = useState({});
+            const [departments, setDepartments] = useState(["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"]); // Initialize with defaults
 
             const [subject, setSubject] = useState("");
             const [department, setDepartment] = useState("");
@@ -647,6 +663,7 @@
                         setMockTitles(data.mockTitles || {});
                         setCustomBank(data.customBank || {});
                         setSubjectDepartments(data.subjectDepartments || {});
+                        if(data.departments) setDepartments(data.departments);
                         if(data.logo) setSharedLogo(data.logo);
                         setIsConnected(true);
                     } else {
@@ -656,6 +673,7 @@
                             mockTitles: {},
                             customBank: {},
                             subjectDepartments: DEFAULT_SUBJECT_DEPARTMENTS,
+                            departments: ["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"],
                             logo: null
                         });
                         setIsConnected(true);
@@ -724,6 +742,14 @@
                     });
                 }
             };
+
+            const handleDeleteDepartment = (deptToDelete) => {
+                 if (confirm(`⚠️ Are you sure you want to PERMANENTLY delete the department "${deptToDelete}" for ALL TEACHERS?`)) {
+                    const newDepts = departments.filter(d => d !== deptToDelete);
+                    SHARED_DOC_REF.update({ departments: newDepts });
+                    if(department === deptToDelete) setDepartment("");
+                 }
+            }
 
             const handleUpdateMockTitle = (idx, val) => {
                 const current = mockTitles[subject] || ["", "", "", "", ""];
@@ -870,6 +896,7 @@
                                 subject={subject} setSubject={setSubject}
                                 subjectOptions={[...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]}
                                 department={department} setDepartment={setDepartment}
+                                departments={departments}
                                 subjectDepartments={subjectDepartments}
                                 onStartClass={handleStartClass}
                                 onAddSubject={handleAddSubject}
@@ -877,6 +904,7 @@
                                 mockTitles={mockTitles[subject] || ["", "", "", "", ""]}
                                 onUpdateMockTitle={handleUpdateMockTitle}
                                 onDeleteSubject={handleDeleteSubject}
+                                onDeleteDepartment={handleDeleteDepartment}
                             />
                         )}
 
