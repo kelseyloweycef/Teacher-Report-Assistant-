@@ -62,25 +62,6 @@
         const HPL_LEVELS = ["Collaboration/Empathy", "Agile", "Hard Working"];
         const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
         
-        const DEFAULT_DEPARTMENTS = ["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"];
-
-        const DEFAULT_SUBJECT_DEPARTMENTS = {
-            "IB History": "Social Studies",
-            "IGCSE History": "Social Studies",
-            "Year 9 History": "Social Studies",
-            "Year 9 Geography": "Social Studies"
-        };
-
-        const DEFAULT_COMMENT_BANK = {
-            "IB History": {
-                "HPL": { "Collaboration/Empathy": [], "Agile": [], "Hard Working": [] },
-                "Language": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
-                "Assessment": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
-                "Homework": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
-                "Improvement": { "Excellent": [], "Good": [], "Average": [], "Poor": [] }
-            }
-        };
-
         // --- ICONS ---
         const Icon = ({ path, className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>;
         const Users = ({ className }) => <Icon className={className} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />;
@@ -105,6 +86,23 @@
         const Check = ({ className }) => <Icon className={className} path={<><polyline points="20 6 9 17 4 12"/></>} />;
         const Filter = ({ className }) => <Icon className={className} path={<><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>} />;
         const Briefcase = ({ className }) => <Icon className={className} path={<><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></>} />;
+
+        const DEFAULT_COMMENT_BANK = {
+            "IB History": {
+                "HPL": { "Collaboration/Empathy": [], "Agile": [], "Hard Working": [] },
+                "Language": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                "Assessment": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                "Homework": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                "Improvement": { "Excellent": [], "Good": [], "Average": [], "Poor": [] }
+            }
+        };
+
+        const DEFAULT_SUBJECT_DEPARTMENTS = {
+            "IB History": "Social Studies",
+            "IGCSE History": "Social Studies",
+            "Year 9 History": "Social Studies",
+            "Year 9 Geography": "Social Studies"
+        };
 
         // --- COMPONENTS ---
 
@@ -159,7 +157,7 @@
         const ClassSetup = ({ 
             subject, setSubject, subjectOptions, department, setDepartment, departments, subjectDepartments, onStartClass, 
             onAddSubject, reportPeriod, setReportPeriod, 
-            mockTitles, onUpdateMockTitle, onDeleteSubject, onDeleteDepartment 
+            mockTitles, onUpdateMockTitle, onDeleteSubject, onDeleteDepartment, onAddDepartment
         }) => {
             const [namesInput, setNamesInput] = useState("");
             const [isCreatingSubject, setIsCreatingSubject] = useState(false);
@@ -214,6 +212,13 @@
                     setNewSubjectName("");
                 }
             };
+            
+            const handleAddDepartment = () => {
+                const name = prompt("Enter name for new department:");
+                if (name && name.trim()) {
+                    onAddDepartment(name.trim());
+                }
+            };
 
             const isYear9Config = subject && (subject.includes("Year 9") || (subjectOptions.find(s => s === subject) && subject.includes("Year 9")));
             const hasSelectedOptional = Object.values(selectedOptionals).some(v => v);
@@ -242,10 +247,17 @@
                                     <option value="">-- Choose Department --</option>
                                     {departments.map(d => <option key={d} value={d}>{d}</option>)}
                                 </select>
+                                <button 
+                                    onClick={handleAddDepartment}
+                                    className="p-3 bg-school-lightBlue text-white rounded-lg hover:bg-school-blue transition-colors shadow-sm"
+                                    title="Add new department"
+                                >
+                                    <PlusCircle className="w-5 h-5" />
+                                </button>
                                 {department && (
                                     <button 
                                         onClick={() => onDeleteDepartment(department)}
-                                        className="p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
+                                        className="p-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors border border-red-200"
                                         title="Delete this department"
                                     >
                                         <Trash2 className="w-5 h-5" />
@@ -257,7 +269,7 @@
                         {/* 2. SUBJECT SELECTION */}
                         <div className={`space-y-2 transition-opacity duration-300 ${!department ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
-                                <Library className="w-4 h-4 text-school-lightBlue" /> 2. Select Subject (Shared Bank)
+                                <Library className="w-4 h-4 text-school-lightBlue" /> 2. Select Report Group e.g. IB History
                             </label>
                             {isCreatingSubject ? (
                                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-1">
@@ -284,7 +296,7 @@
                                 <div className="flex gap-2 items-center">
                                     <div className="relative flex-1">
                                         <select value={subject} onChange={(e) => e.target.value === "__NEW__" ? (setIsCreatingSubject(true), setSubject("")) : setSubject(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg">
-                                            <option value="">-- Select Subject --</option>
+                                            <option value="">-- Select Report Group --</option>
                                             {filteredSubjects.map(subj => <option key={subj} value={subj}>{subj}</option>)}
                                             <option disabled>────────────────</option>
                                             <option value="__NEW__" className="font-bold text-school-lightBlue">+ Add New Subject to {department}...</option>
@@ -742,6 +754,14 @@
                     });
                 }
             };
+            
+            const handleAddDepartment = (newDept) => {
+                if (!departments.includes(newDept)) {
+                    const newDepts = [...departments, newDept];
+                    SHARED_DOC_REF.update({ departments: newDepts });
+                    setDepartment(newDept);
+                }
+            };
 
             const handleDeleteDepartment = (deptToDelete) => {
                  if (confirm(`⚠️ Are you sure you want to PERMANENTLY delete the department "${deptToDelete}" for ALL TEACHERS?`)) {
@@ -905,6 +925,7 @@
                                 onUpdateMockTitle={handleUpdateMockTitle}
                                 onDeleteSubject={handleDeleteSubject}
                                 onDeleteDepartment={handleDeleteDepartment}
+                                onAddDepartment={handleAddDepartment}
                             />
                         )}
 
