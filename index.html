@@ -207,6 +207,10 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
+                    if (subjectOptions.includes(newSubjectName.trim())) {
+                         alert("This subject already exists.");
+                         return;
+                    }
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -216,6 +220,10 @@
             const handleAddDepartment = () => {
                 const name = prompt("Enter name for new department:");
                 if (name && name.trim()) {
+                    if (departments.includes(name.trim())) {
+                        alert("Department already exists.");
+                        return;
+                    }
                     onAddDepartment(name.trim());
                 }
             };
@@ -223,10 +231,11 @@
             const isYear9Config = subject && (subject.includes("Year 9") || (subjectOptions.find(s => s === subject) && subject.includes("Year 9")));
             const hasSelectedOptional = Object.values(selectedOptionals).some(v => v);
 
-            const filteredSubjects = subjectOptions.filter(s => {
+            // Filter subjects based on selected department and deduplicate
+            const filteredSubjects = Array.from(new Set(subjectOptions.filter(s => {
                 const dept = subjectDepartments[s] || "Other";
                 return dept === department;
-            });
+            })));
 
             return (
                 <div className="bg-white rounded-xl shadow-lg p-8 border-t-4 border-school-lightBlue animate-in">
@@ -755,11 +764,16 @@
                 }
             };
             
-            const handleAddDepartment = (newDept) => {
-                if (!departments.includes(newDept)) {
-                    const newDepts = [...departments, newDept];
+            const handleAddDepartment = () => {
+                const name = prompt("Enter name for new department:");
+                if (name && name.trim()) {
+                    if (departments.includes(name.trim())) {
+                        alert("Department already exists.");
+                        return;
+                    }
+                    const newDepts = [...departments, name.trim()];
                     SHARED_DOC_REF.update({ departments: newDepts });
-                    setDepartment(newDept);
+                    setDepartment(name.trim());
                 }
             };
 
