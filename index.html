@@ -78,7 +78,7 @@
         const Share = ({ className }) => <Icon className={className} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></>} />;
         const RotateCcw = ({ className }) => <Icon className={className} path={<><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></>} />;
         const Trash2 = ({ className }) => <Icon className={className} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />;
-        const Settings = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
+        const Settings = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
         const Pencil = ({ className }) => <Icon className={className} path={<><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></>} />;
         const Save = ({ className }) => <Icon className={className} path={<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>} />;
         const X = ({ className }) => <Icon className={className} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />;
@@ -157,7 +157,7 @@
 
         const ClassSetup = ({ 
             subject, setSubject, subjectOptions, department, setDepartment, departments, subjectDepartments, onStartClass, 
-            onAddSubject, reportPeriod, setReportPeriod, subjectTypes,
+            onAddSubject, reportPeriod, setReportPeriod, subjectTypes = {}, 
             mockTitles, onUpdateMockTitle, onDeleteSubject, onDeleteDepartment, onAddDepartment
         }) => {
             const [namesInput, setNamesInput] = useState("");
@@ -183,7 +183,12 @@
                 }
                 
                 let finalCategories = [];
-                // LOGIC: Check if this is a Year 9 Style / Shared Report
+                
+                // --- ROBUST CHECK FOR SHARED REPORT STYLE ---
+                // It is shared if:
+                // 1. It is an existing subject AND the database says it's type 'shared'
+                // 2. OR the name contains "Year 9"
+                // 3. OR we are currently creating a new subject and selected "Shared Report"
                 const isSharedStyle = (subject && subjectTypes[subject] === 'shared') || (subject && subject.includes("Year 9")) || (isCreatingSubject && newSubjectType === 'shared');
 
                 if (reportPeriod === "Mocks") {
@@ -193,14 +198,16 @@
                         return { id: `Mock${i + 1}`, label: label };
                     });
                 } else if (isSharedStyle) {
-                    // COMPULSORY
+                    // COMPULSORY CATEGORIES
                     finalCategories.push({id: "Assessment", label: "Assessment"});
                     finalCategories.push({id: "Improvement", label: "Improvement"});
-                    // OPTIONALS
+                    
+                    // OPTIONAL CATEGORIES (Must select at least 1)
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "HPL"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
                     if (selectedOptionals["Homework"]) finalCategories.push({id: "Homework", label: "Homework"});
                 } else {
+                    // FULL REPORT (Default)
                     finalCategories = [
                         {id: "HPL", label: "HPL"},
                         {id: "Language", label: "Language"},
@@ -236,7 +243,7 @@
                 }
             };
 
-            // LOGIC TO DETERMINE IF THE CONFIG BOX SHOWS
+            // LOGIC TO SHOW THE CONFIG BOX
             const isSharedStyle = (subject && subjectTypes[subject] === 'shared') || (subject && subject.includes("Year 9"));
             const showSharedConfig = (isSharedStyle || (isCreatingSubject && newSubjectType === 'shared')) && reportPeriod !== "Mocks";
             
@@ -363,7 +370,7 @@
                                 </div>
                             )}
 
-                            {/* YEAR 9 / SHARED CONFIGURATION */}
+                            {/* SHARED REPORT CONFIGURATION */}
                             {showSharedConfig && (
                                 <div className="bg-blue-50 border border-school-lightBlue/30 rounded-lg p-5 mt-4">
                                     <div className="flex items-center gap-2 mb-3">
