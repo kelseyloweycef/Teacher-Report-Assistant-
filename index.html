@@ -183,6 +183,8 @@
                 }
                 
                 let finalCategories = [];
+                
+                // --- ROBUST CHECK FOR SHARED REPORT STYLE ---
                 const isSharedStyle = (subject && subjectTypes[subject] === 'shared') || (subject && subject.includes("Year 9")) || (isCreatingSubject && newSubjectType === 'shared');
 
                 if (reportPeriod === "Mocks") {
@@ -233,6 +235,7 @@
                 }
             };
 
+            // LOGIC TO SHOW THE CONFIG BOX
             const isSharedStyle = (subject && subjectTypes[subject] === 'shared') || (subject && subject.includes("Year 9"));
             const showSharedConfig = (isSharedStyle || (isCreatingSubject && newSubjectType === 'shared')) && reportPeriod !== "Mocks";
             
@@ -394,6 +397,12 @@
                 }
             };
 
+            const handleDeleteSkill = (skill) => {
+                if (confirm(`Delete the skill category "${skill}" and all its comments?`)) {
+                    onDeleteSkill(skill); // You need to implement this in parent or reuse logic
+                }
+            }
+
             return (
                 <div className="p-4 bg-white rounded-xl shadow-sm border-l-4 border-school-lightBlue relative">
                     
@@ -403,13 +412,24 @@
                             <div className="flex flex-wrap gap-2 items-center">
                                 <span className="text-xs font-bold text-gray-400 uppercase mr-2">Skills:</span>
                                 {skillTabs.map(skill => (
-                                    <button 
-                                        key={skill} 
-                                        onClick={() => { onSwitchSkill(skill); setActiveLevel(null); }} 
-                                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${activeSkill === skill ? 'bg-school-blue text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                                    >
-                                        {skill}
-                                    </button>
+                                    <div key={skill} className="relative group">
+                                        <button 
+                                            onClick={() => { onSwitchSkill(skill); setActiveLevel(null); }} 
+                                            className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${activeSkill === skill ? 'bg-school-blue text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                        >
+                                            {skill}
+                                        </button>
+                                        {/* DELETE SKILL BUTTON (Only for custom skills, not General) */}
+                                        {skill !== "General" && activeSkill === skill && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); onDeleteComment(null, null, skill, true); }} // Special flag for skill deletion
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 shadow-sm"
+                                                title="Delete this skill category"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                    </div>
                                 ))}
                                 <button onClick={handleAddSkillPrompt} className="p-1 bg-green-50 text-green-600 rounded-full hover:bg-green-100 border border-green-200" title="Add Skill Category">
                                     <PlusCircle className="w-4 h-4" />
@@ -724,13 +744,28 @@
                 }
             };
 
-            const handleDeleteComment = (level, text, skill = "General") => {
+            const handleDeleteComment = (level, text, skill = "General", isSkillDeletion = false) => {
                 const catId = activeCategories[currentStepIndex].id;
                 const key = getBankKey(catId);
                 const newBank = JSON.parse(JSON.stringify(customBank));
-                const comments = newBank[key]?.[catId]?.[level]?.[skill] || [];
-                newBank[key][catId][level][skill] = comments.filter(c => c !== text);
-                updateCloud('customBank', newBank);
+
+                if (isSkillDeletion) {
+                    // Delete the entire skill category from the Subject Skills list
+                    if (confirm(`Are you sure you want to delete the skill "${skill}" permanently?`)) {
+                        const currentSkills = subjectSkills[subject] || {};
+                        const catSkills = currentSkills[catId] || ["General"];
+                        const newCatSkills = catSkills.filter(s => s !== skill);
+                        
+                        const updatedSubjectSkills = { ...subjectSkills, [subject]: { ...currentSkills, [catId]: newCatSkills } };
+                        updateCloud('subjectSkills', updatedSubjectSkills);
+                        // We don't strictly need to delete comments from customBank, they will just be hidden
+                    }
+                } else {
+                    // Delete a single comment
+                    const comments = newBank[key]?.[catId]?.[level]?.[skill] || [];
+                    newBank[key][catId][level][skill] = comments.filter(c => c !== text);
+                    updateCloud('customBank', newBank);
+                }
             };
 
             const handleAddSkill = (newSkill) => {
