@@ -509,7 +509,7 @@
         const BatchStep = ({ 
             category, students, classData, optionsMap, 
             onUpdateStudent, onAddCustomComment, onEditComment, onDeleteComment, levels,
-            onShareGlobal, onShareP3, reportPeriod, onAddSkill, skillTabs, onDeleteSkill
+            onShareGlobal, onSharePeriod, onDeleteAllComments, reportPeriod, onAddSkill, skillTabs, onDeleteSkill
         }) => {
             const isHPLOrLang = category.id === 'HPL' || category.id === 'Language';
             const [activeSkills, setActiveSkills] = useState({}); // Track active skill tab per student
@@ -520,9 +520,35 @@
                 <div className="space-y-8 animate-in">
                     <div className="bg-blue-50 border-l-4 border-school-lightBlue p-4 rounded-r-lg mb-6 flex justify-between items-center flex-wrap gap-4">
                         <h2 className="text-xl font-bold text-school-blue">Category: {category.label}</h2>
+                        
                         <div className="flex gap-2">
-                            {isHPLOrLang && <button onClick={onShareGlobal} className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white text-xs font-bold rounded shadow hover:bg-purple-700 transition"><Globe className="w-4 h-4"/> Update All Subjects</button>}
-                            {!isHPLOrLang && reportPeriod !== "Progress 3" && reportPeriod !== "Mocks" && <button onClick={onShareP3} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded shadow hover:bg-indigo-700 transition"><Share className="w-4 h-4"/> Share with P3 Bank</button>}
+                            {/* DELETE ALL BUTTON (Not for HPL/Language) */}
+                            {!isHPLOrLang && (
+                                <button onClick={onDeleteAllComments} className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white text-xs font-bold rounded shadow hover:bg-red-700 transition">
+                                    <Trash2 className="w-4 h-4"/> Delete All Comments
+                                </button>
+                            )}
+
+                            {/* SHARE BUTTONS */}
+                            {isHPLOrLang && (
+                                <button onClick={onShareGlobal} className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white text-xs font-bold rounded shadow hover:bg-purple-700 transition">
+                                    <Globe className="w-4 h-4"/> Update All Subjects
+                                </button>
+                            )}
+
+                            {/* Share P2 -> P3 */}
+                            {!isHPLOrLang && reportPeriod === "Progress 2" && (
+                                <button onClick={() => onSharePeriod("Progress 3")} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded shadow hover:bg-indigo-700 transition">
+                                    <Share className="w-4 h-4"/> Share with P3
+                                </button>
+                            )}
+
+                            {/* Share P3 -> P2 */}
+                            {!isHPLOrLang && reportPeriod === "Progress 3" && (
+                                <button onClick={() => onSharePeriod("Progress 2")} className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded shadow hover:bg-indigo-700 transition">
+                                    <Share className="w-4 h-4"/> Share with P2
+                                </button>
+                            )}
                         </div>
                     </div>
                     
@@ -736,18 +762,29 @@
                 }
             };
 
-            const handleDeleteComment = (level, text, skill = "General") => {
+            const handleDeleteComment = (level, text, skill = "General", isSkillDeletion = false) => {
                 const catId = activeCategories[currentStepIndex].id;
                 const key = getBankKey(catId);
                 const newBank = JSON.parse(JSON.stringify(customBank));
-                const comments = newBank[key]?.[catId]?.[level]?.[skill] || [];
-                newBank[key][catId][level][skill] = comments.filter(c => c !== text);
-                updateCloud('customBank', newBank);
+
+                if (isSkillDeletion) {
+                    if (confirm(`Are you sure you want to delete the skill "${skill}" permanently?`)) {
+                        const currentSkills = subjectSkills[subject] || {};
+                        const catSkills = currentSkills[catId] || ["General"];
+                        const newCatSkills = catSkills.filter(s => s !== skill);
+                        
+                        const updatedSubjectSkills = { ...subjectSkills, [subject]: { ...currentSkills, [catId]: newCatSkills } };
+                        updateCloud('subjectSkills', updatedSubjectSkills);
+                    }
+                } else {
+                    const comments = newBank[key]?.[catId]?.[level]?.[skill] || [];
+                    newBank[key][catId][level][skill] = comments.filter(c => c !== text);
+                    updateCloud('customBank', newBank);
+                }
             };
 
             const handleAddSkill = (newSkill) => {
                 const catId = activeCategories[currentStepIndex].id;
-                // Only allow for Ass/Imp
                 if (catId !== 'Assessment' && catId !== 'Improvement') return;
 
                 const currentSkills = subjectSkills[subject] || {};
@@ -763,40 +800,51 @@
             const handleDeleteSkill = (skillToDelete) => {
                 const catId = activeCategories[currentStepIndex].id;
                 if (catId !== 'Assessment' && catId !== 'Improvement') return;
-                
                 const currentSkills = subjectSkills[subject] || {};
                 const catSkills = currentSkills[catId] || ["General"];
-                
-                // Remove skill from list
                 const newCatSkills = catSkills.filter(s => s !== skillToDelete);
                 const updatedSubjectSkills = { ...subjectSkills, [subject]: { ...currentSkills, [catId]: newCatSkills } };
                 updateCloud('subjectSkills', updatedSubjectSkills);
             };
 
             const handleShareGlobal = (catId) => {
-               // Simple version for global share - copies General comments only to avoid complexity
                alert("Global sharing currently only supports 'General' comments for simplicity.");
             };
 
-            const handleShareP3 = (catId) => {
-                if (!confirm(`Copy ${catId} (General) comments to ${subject} Progress 3?`)) return;
-                const sourceKey = `${subject}::${reportPeriod}`;
-                const targetKey = `${subject}::Progress 3`;
-                const newBank = JSON.parse(JSON.stringify(customBank));
-                
-                if (!newBank[targetKey]) newBank[targetKey] = {};
-                if (!newBank[targetKey][catId]) newBank[targetKey][catId] = {};
+            const handleSharePeriod = (targetPeriod) => {
+                const catId = activeCategories[currentStepIndex].id;
+                const sourcePeriod = reportPeriod;
+                if (!confirm(`⚠️ WARNING: You are about to share ${catId} comments from ${sourcePeriod} to ${targetPeriod}.\n\nThis will DELETE and REPLACE all existing ${catId} comments in ${targetPeriod}.\n\nAre you sure?`)) return;
 
-                STANDARD_LEVELS.forEach(lvl => {
-                    const source = newBank[sourceKey]?.[catId]?.[lvl]?.["General"] || [];
-                    if (!newBank[targetKey][catId][lvl]) newBank[targetKey][catId][lvl] = {};
-                    if (!newBank[targetKey][catId][lvl]["General"]) newBank[targetKey][catId][lvl]["General"] = [];
-                    
-                    const existing = newBank[targetKey][catId][lvl]["General"];
-                    newBank[targetKey][catId][lvl]["General"] = Array.from(new Set([...existing, ...source]));
-                });
+                const sourceKey = `${subject}::${sourcePeriod}`;
+                const targetKey = `${subject}::${targetPeriod}`;
+                const sourceData = customBank[sourceKey]?.[catId];
+
+                if (!sourceData) return alert("No comments to share.");
+
+                const newBank = JSON.parse(JSON.stringify(customBank));
+                if (!newBank[targetKey]) newBank[targetKey] = {};
+                
+                // OVERWRITE LOGIC
+                newBank[targetKey][catId] = JSON.parse(JSON.stringify(sourceData));
+
                 updateCloud('customBank', newBank);
-                alert("Shared 'General' comments to P3!");
+                alert(`Successfully overwrote ${targetPeriod} comments with ${sourcePeriod} data!`);
+            };
+
+            const handleDeleteAllInCategory = () => {
+                const catId = activeCategories[currentStepIndex].id;
+                if (catId === 'HPL' || catId === 'Language') return; 
+                if (!confirm(`Are you sure you want to DELETE ALL comments for ${catId} in ${reportPeriod}? This cannot be undone.`)) return;
+
+                const key = `${subject}::${reportPeriod}`;
+                const newBank = JSON.parse(JSON.stringify(customBank));
+
+                if (newBank[key] && newBank[key][catId]) {
+                    delete newBank[key][catId]; 
+                    updateCloud('customBank', newBank);
+                    alert("All comments in this category have been deleted.");
+                }
             };
 
             const handleStartClass = (names, categories) => {
@@ -813,23 +861,20 @@
                 const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
                 const map = {};
                 
-                // Get skills for this category
                 const mySkills = (subjectSkills[subject]?.[catId]) || ["General"];
 
                 mySkills.forEach(skill => {
                     map[skill] = {};
                     levels.forEach(l => {
-                        // Support legacy structure (array) vs new structure (object with skills)
                         let customs = [];
                         const levelData = customBank[key]?.[catId]?.[l];
                         
                         if (Array.isArray(levelData)) {
-                            if (skill === "General") customs = levelData; // Legacy fallback
+                            if (skill === "General") customs = levelData; 
                         } else if (levelData && typeof levelData === 'object') {
                             customs = levelData[skill] || [];
                         }
 
-                        // Defaults only exist for General usually
                         let defaults = [];
                         if (skill === "General") {
                              defaults = DEFAULT_COMMENT_BANK[subject]?.[catId]?.[l] || [];
@@ -896,7 +941,8 @@
                                 onDeleteComment={handleDeleteComment}
                                 levels={(activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS}
                                 onShareGlobal={() => handleShareGlobal(activeCategory.id)}
-                                onShareP3={() => handleShareP3(activeCategory.id)}
+                                onSharePeriod={handleSharePeriod}
+                                onDeleteAllComments={handleDeleteAllInCategory}
                                 reportPeriod={reportPeriod}
                                 onAddSkill={handleAddSkill}
                                 onDeleteSkill={(s) => { if(confirm(`Delete skill "${s}"?`)) handleDeleteSkill(s)}}
