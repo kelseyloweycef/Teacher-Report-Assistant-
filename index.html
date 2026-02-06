@@ -410,7 +410,7 @@
                                         {skill !== "General" && activeSkill === skill && (
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); onDeleteSkill(skill); }} 
-                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 shadow-sm"
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
                                                 title="Delete this skill category"
                                             >
                                                 <X className="w-3 h-3" />
