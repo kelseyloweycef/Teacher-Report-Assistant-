@@ -212,7 +212,6 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
-                    // Removed validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -675,9 +674,17 @@
             };
 
             const handleAddSubject = (newSubject, type, dept) => {
-                const updatedSubjects = [...customSubjects, newSubject];
+                // 1. Update List (No duplicates)
+                let updatedSubjects = [...customSubjects];
+                if (!updatedSubjects.includes(newSubject)) {
+                    updatedSubjects.push(newSubject);
+                }
+
+                // 2. Update Metadata
                 const updatedTypes = { ...subjectTypes, [newSubject]: type };
                 const updatedDepts = { ...subjectDepartments, [newSubject]: dept };
+
+                // 3. Initialize Bank (Only if fresh)
                 let newBank = { ...customBank };
                 const sharedKey = `${newSubject}::SHARED`;
                 if (!newBank[sharedKey]) {
@@ -689,7 +696,15 @@
                         "Improvement": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} }
                      };
                 }
-                SHARED_DOC_REF.update({ customSubjects: updatedSubjects, subjectTypes: updatedTypes, subjectDepartments: updatedDepts, customBank: newBank });
+
+                // 4. Save
+                SHARED_DOC_REF.update({
+                    customSubjects: updatedSubjects,
+                    subjectTypes: updatedTypes,
+                    subjectDepartments: updatedDepts,
+                    customBank: newBank
+                });
+
                 setSubject(newSubject);
             };
 
