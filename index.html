@@ -212,10 +212,7 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
-                    if (subjectOptions.includes(newSubjectName.trim())) {
-                         alert("This subject already exists.");
-                         return;
-                    }
+                    // Removed validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
