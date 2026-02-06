@@ -411,10 +411,10 @@
                                             {skill}
                                         </button>
                                         {/* DELETE SKILL BUTTON (Only for custom skills, not General) */}
-                                        {skill !== "General" && (
+                                        {skill !== "General" && activeSkill === skill && (
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); onDeleteSkill(skill); }} 
-                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 shadow-sm"
                                                 title="Delete this skill category"
                                             >
                                                 <X className="w-3 h-3" />
@@ -704,7 +704,23 @@
                     const updatedMockTitles = { ...mockTitles }; delete updatedMockTitles[subject];
                     const updatedDepts = { ...subjectDepartments }; delete updatedDepts[subject];
                     const updatedSkills = { ...subjectSkills }; delete updatedSkills[subject];
-                    SHARED_DOC_REF.update({ customSubjects: updatedSubjects, subjectTypes: updatedTypes, mockTitles: updatedMockTitles, subjectDepartments: updatedDepts, subjectSkills: updatedSkills })
+                    
+                    // Deep clean customBank
+                    const updatedBank = { ...customBank };
+                    Object.keys(updatedBank).forEach(key => {
+                        if (key.startsWith(`${subject}::`)) {
+                            delete updatedBank[key];
+                        }
+                    });
+
+                    SHARED_DOC_REF.update({ 
+                        customSubjects: updatedSubjects, 
+                        subjectTypes: updatedTypes, 
+                        mockTitles: updatedMockTitles, 
+                        subjectDepartments: updatedDepts, 
+                        subjectSkills: updatedSkills,
+                        customBank: updatedBank 
+                    })
                     .then(() => { alert("Subject deleted."); setSubject(""); }).catch(console.error);
                 }
             };
