@@ -537,7 +537,7 @@
 
                             {/* SHARE BUTTONS */}
                             {isHPLOrLang && (
-                                <button onClick={onShareGlobal} className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white text-xs font-bold rounded shadow hover:bg-purple-700 transition">
+                                <button onClick={() => onShareGlobal(category.id)} className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white text-xs font-bold rounded shadow hover:bg-purple-700 transition">
                                     <Globe className="w-4 h-4"/> Update All Subjects
                                 </button>
                             )}
@@ -846,7 +846,38 @@
             };
 
             const handleShareGlobal = (catId) => {
-               alert("Global sharing currently only supports 'General' comments for simplicity.");
+                if (!confirm(`Update ${catId} comments for ALL subjects? This will add your current ${catId} comments to every other subject's bank.`)) return;
+                
+                const sourceKey = `${subject}::SHARED`;
+                const sourceCategoryData = customBank[sourceKey]?.[catId]; 
+                
+                if (!sourceCategoryData) return alert("No comments to share.");
+
+                const newBank = JSON.parse(JSON.stringify(customBank));
+                const allSubjects = [...customSubjects]; 
+                const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
+
+                allSubjects.forEach(targetSubj => {
+                    if (targetSubj === subject) return; 
+
+                    const targetKey = `${targetSubj}::SHARED`;
+                    if (!newBank[targetKey]) newBank[targetKey] = {};
+                    if (!newBank[targetKey][catId]) newBank[targetKey][catId] = {};
+
+                    levels.forEach(lvl => {
+                        const sourceComments = sourceCategoryData[lvl]?.["General"] || [];
+                        if (sourceComments.length > 0) {
+                            if (!newBank[targetKey][catId][lvl]) newBank[targetKey][catId][lvl] = {};
+                            if (!newBank[targetKey][catId][lvl]["General"]) newBank[targetKey][catId][lvl]["General"] = [];
+                            
+                            const existing = newBank[targetKey][catId][lvl]["General"];
+                            newBank[targetKey][catId][lvl]["General"] = Array.from(new Set([...existing, ...sourceComments]));
+                        }
+                    });
+                });
+
+                updateCloud('customBank', newBank);
+                alert(`Successfully updated ${catId} comments across ${allSubjects.length - 1} other subjects!`);
             };
 
             const handleSharePeriod = (targetPeriod) => {
