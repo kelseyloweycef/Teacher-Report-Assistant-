@@ -363,12 +363,15 @@
             const [editingText, setEditingText] = useState(null);
             const [editText, setEditText] = useState("");
 
-            // Determine if this category supports skills (Assessment/Improvement)
+            // Determine if this category supports skills (Assessment/Improvement ONLY)
             const supportsSkills = category.id === "Assessment" || category.id === "Improvement";
+            
+            // For Homework/HPL/Language, activeSkill is always "General"
+            const currentDisplaySkill = supportsSkills ? activeSkill : "General";
 
             const handleSaveNewComment = () => {
                 if (newComment.trim() && activeLevel) {
-                    onAddComment(activeLevel, newComment.trim(), activeSkill);
+                    onAddComment(activeLevel, newComment.trim(), currentDisplaySkill);
                     setNewComment("");
                     setIsAdding(false);
                 }
@@ -376,13 +379,13 @@
 
             const handleSaveEdit = (oldText) => {
                 if(editText.trim()) {
-                    onEditComment(activeLevel, oldText, editText.trim(), activeSkill);
+                    onEditComment(activeLevel, oldText, editText.trim(), currentDisplaySkill);
                     setEditingText(null);
                 }
             };
 
             // Get options specifically for the active skill
-            const activeOptions = (activeLevel && optionsMap && optionsMap[activeSkill] && optionsMap[activeSkill][activeLevel]) || [];
+            const activeOptions = (activeLevel && optionsMap && optionsMap[currentDisplaySkill] && optionsMap[currentDisplaySkill][activeLevel]) || [];
 
             const handleAddSkillPrompt = () => {
                 const newSkill = prompt("Enter new skill name (e.g. 'Analysis', 'Algebra'):");
@@ -391,10 +394,14 @@
                 }
             };
 
+            // Dynamic Placeholder Text
+            let placeholderText = `Select a ${currentDisplaySkill} comment...`;
+            if(category.id === "Homework") placeholderText = "Select a homework comment...";
+
             return (
                 <div className="p-4 bg-white rounded-xl shadow-sm border-l-4 border-school-lightBlue relative">
                     
-                    {/* SKILL TABS */}
+                    {/* SKILL TABS - ONLY FOR ASSESSMENT/IMPROVEMENT */}
                     {supportsSkills && (
                         <div className="mb-4 border-b border-gray-200 pb-2">
                             <div className="flex flex-wrap gap-2 items-center">
@@ -439,7 +446,7 @@
                     {activeLevel && (
                         <div className="mb-4 space-y-3">
                              <div className="flex justify-between items-center border-b pb-2">
-                                <span className="text-xs font-bold text-gray-500 uppercase">{activeSkill === 'General' ? '' : `${activeSkill}:`} {activeLevel} Comments</span>
+                                <span className="text-xs font-bold text-gray-500 uppercase">{supportsSkills && currentDisplaySkill !== 'General' ? `${currentDisplaySkill}: ` : ''}{activeLevel} Comments</span>
                                 <div className="flex gap-2">
                                     <button onClick={() => { setIsManaging(!isManaging); setIsAdding(false); }} className={`text-xs font-bold flex items-center gap-1 ${isManaging ? 'text-school-blue' : 'text-gray-400 hover:text-gray-600'}`} title="Manage Comments"><Settings className="w-3 h-3"/> Manage</button>
                                     <button onClick={() => { setIsAdding(!isAdding); setIsManaging(false); }} className="text-xs text-school-lightBlue font-bold flex items-center gap-1"><PlusCircle className="w-3 h-3"/> Add</button>
@@ -448,7 +455,7 @@
 
                              {isAdding && (
                                 <div className="flex gap-2">
-                                    <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} className="flex-1 border p-1 rounded text-sm bg-blue-50" placeholder={`Type new ${activeSkill} comment...`} autoFocus />
+                                    <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} className="flex-1 border p-1 rounded text-sm bg-blue-50" placeholder="Type new comment..." autoFocus />
                                     <button onClick={handleSaveNewComment} className="bg-green-600 text-white px-2 rounded text-xs">Save</button>
                                 </div>
                              )}
@@ -469,7 +476,7 @@
                                                     <span className="flex-1 mr-2 text-gray-700">{opt}</span>
                                                     <div className="flex gap-1">
                                                         <button onClick={() => { setEditingText(opt); setEditText(opt); }} className="text-blue-400 hover:text-blue-600"><Pencil className="w-3 h-3"/></button>
-                                                        <button onClick={() => { if(confirm("Delete this shared comment?")) onDeleteComment(activeLevel, opt, activeSkill); }} className="text-red-400 hover:text-red-600"><Trash2 className="w-3 h-3"/></button>
+                                                        <button onClick={() => { if(confirm("Delete this shared comment?")) onDeleteComment(activeLevel, opt, currentDisplaySkill); }} className="text-red-400 hover:text-red-600"><Trash2 className="w-3 h-3"/></button>
                                                     </div>
                                                 </>
                                             )}
@@ -488,7 +495,7 @@
                                         }}
                                         value="" 
                                     >
-                                        <option value="" disabled>▼ Select a {activeSkill} comment...</option>
+                                        <option value="" disabled>▼ {placeholderText}</option>
                                         {activeOptions.length === 0 && <option disabled>No comments available</option>}
                                         {activeOptions.map((opt, idx) => <option key={idx} value={opt}>{opt}</option>)}
                                     </select>
@@ -962,6 +969,7 @@
 
                         {activeCategory && (
                             <BatchStep
+                                key={activeCategory.id}
                                 category={activeCategory}
                                 students={students}
                                 classData={classData}
