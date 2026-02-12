@@ -212,7 +212,6 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
-                    // Direct add without validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -865,14 +864,19 @@
                     if (!newBank[targetKey][catId]) newBank[targetKey][catId] = {};
 
                     levels.forEach(lvl => {
-                        const sourceComments = sourceCategoryData[lvl]?.["General"] || [];
-                        if (sourceComments.length > 0) {
-                            if (!newBank[targetKey][catId][lvl]) newBank[targetKey][catId][lvl] = {};
-                            if (!newBank[targetKey][catId][lvl]["General"]) newBank[targetKey][catId][lvl]["General"] = [];
-                            
-                            const existing = newBank[targetKey][catId][lvl]["General"];
-                            newBank[targetKey][catId][lvl]["General"] = Array.from(new Set([...existing, ...sourceComments]));
-                        }
+                        // FIX: Iterate through ALL skills (e.g. General, Writing, etc)
+                        // Actually for HPL/Lang usually only General, but let's be safe
+                        const sourceLevelObj = sourceCategoryData[lvl] || {};
+                        Object.keys(sourceLevelObj).forEach(skillName => {
+                             const sourceComments = sourceLevelObj[skillName] || [];
+                             if (sourceComments.length > 0) {
+                                if (!newBank[targetKey][catId][lvl]) newBank[targetKey][catId][lvl] = {};
+                                if (!newBank[targetKey][catId][lvl][skillName]) newBank[targetKey][catId][lvl][skillName] = [];
+                                
+                                const existing = newBank[targetKey][catId][lvl][skillName];
+                                newBank[targetKey][catId][lvl][skillName] = Array.from(new Set([...existing, ...sourceComments]));
+                             }
+                        });
                     });
                 });
 
