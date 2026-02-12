@@ -212,6 +212,7 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
+                    // Direct add without validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -511,7 +512,9 @@
             const [activeSkills, setActiveSkills] = useState({}); // Track active skill tab per student
 
             const getSkill = (student) => activeSkills[student] || "General";
-            
+            const isSkillCategory = category.id === 'Assessment' || category.id === 'Improvement';
+            const currentSkillTabs = isSkillCategory ? skillTabs : ["General"]; // Force general for homework
+
             return (
                 <div className="space-y-8 animate-in">
                     <div className="bg-blue-50 border-l-4 border-school-lightBlue p-4 rounded-r-lg mb-6 flex justify-between items-center flex-wrap gap-4">
@@ -567,7 +570,7 @@
                                         levels={levels}
                                         onAddSkill={onAddSkill}
                                         onDeleteSkill={onDeleteSkill}
-                                        skillTabs={skillTabs}
+                                        skillTabs={currentSkillTabs}
                                         activeSkill={getSkill(student)}
                                         onSwitchSkill={(skill) => setActiveSkills(prev => ({...prev, [student]: skill}))}
                                     />
