@@ -865,8 +865,6 @@
                     if (!newBank[targetKey][catId]) newBank[targetKey][catId] = {};
 
                     levels.forEach(lvl => {
-                        // FIX: Iterate through ALL skills (e.g. General, Writing, etc)
-                        // Actually for HPL/Lang usually only General, but let's be safe
                         const sourceLevelObj = sourceCategoryData[lvl] || {};
                         Object.keys(sourceLevelObj).forEach(skillName => {
                              const sourceComments = sourceLevelObj[skillName] || [];
@@ -969,7 +967,7 @@
                 students.forEach(s => {
                     out += `${s}\n`;
                     activeCategories.forEach(c => {
-                        // Removed the bullet point "• "
+                        // Removed the bullet point "• " - Plain text output
                         if (classData[s]?.[c.id]) out += `${classData[s][c.id].trim()}\n`;
                     });
                     out += `\n-----------------------------------\n\n`;
