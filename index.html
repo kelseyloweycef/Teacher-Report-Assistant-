@@ -212,6 +212,7 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
+                    // Direct add without validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -968,7 +969,8 @@
                 students.forEach(s => {
                     out += `${s}\n`;
                     activeCategories.forEach(c => {
-                        if (classData[s]?.[c.id]) out += `• ${classData[s][c.id].trim()}\n`;
+                        // Removed the bullet point "• "
+                        if (classData[s]?.[c.id]) out += `${classData[s][c.id].trim()}\n`;
                     });
                     out += `\n-----------------------------------\n\n`;
                 });
