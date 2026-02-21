@@ -664,12 +664,17 @@
                         if(data.logo) setSharedLogo(data.logo);
                         setIsConnected(true);
                     } else {
-                        SHARED_DOC_REF.set({
-                            customSubjects: [], subjectTypes: {}, mockTitles: {}, customBank: {},
-                            subjectDepartments: DEFAULT_SUBJECT_DEPARTMENTS, subjectSkills: {},
-                            departments: ["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"],
-                            logo: null
-                        });
+                        // FIX FOR EMPTY DB WIPE: Ensure we don't accidentally overwrite if network fails
+                        SHARED_DOC_REF.get().then(dbDoc => {
+                            if (!dbDoc.exists) {
+                                SHARED_DOC_REF.set({
+                                    customSubjects: [], subjectTypes: {}, mockTitles: {}, customBank: {},
+                                    subjectDepartments: DEFAULT_SUBJECT_DEPARTMENTS, subjectSkills: {},
+                                    departments: ["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"],
+                                    logo: null
+                                });
+                            }
+                        }).catch(console.error);
                         setIsConnected(true);
                     }
                 }, (err) => {
@@ -872,7 +877,7 @@
                                 if (!newBank[targetKey][catId][lvl]) newBank[targetKey][catId][lvl] = {};
                                 if (!newBank[targetKey][catId][lvl][skillName]) newBank[targetKey][catId][lvl][skillName] = [];
                                 
-                                const existing = newBank[targetKey][catId][lvl][skillName];
+                                const existing = newBank[targetKey][catId][lvl][skillName] || [];
                                 newBank[targetKey][catId][lvl][skillName] = Array.from(new Set([...existing, ...sourceComments]));
                              }
                         });
@@ -967,7 +972,7 @@
                 students.forEach(s => {
                     out += `${s}\n`;
                     activeCategories.forEach(c => {
-                        // Removed the bullet point "• " - Plain text output
+                        // No bullet point - Plain text output
                         if (classData[s]?.[c.id]) out += `${classData[s][c.id].trim()}\n`;
                     });
                     out += `\n-----------------------------------\n\n`;
