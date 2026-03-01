@@ -192,11 +192,12 @@
                         return { id: `Mock${i + 1}`, label: label };
                     });
                 } else if (isSharedStyle) {
+                    // Update Order: Assessment, Optionals, Improvement
                     finalCategories.push({id: "Assessment", label: "Assessment"});
-                    finalCategories.push({id: "Improvement", label: "Improvement"});
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "HPL"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
                     if (selectedOptionals["Homework"]) finalCategories.push({id: "Homework", label: "Homework"});
+                    finalCategories.push({id: "Improvement", label: "Improvement"});
                 } else {
                     finalCategories = [
                         {id: "HPL", label: "HPL"},
