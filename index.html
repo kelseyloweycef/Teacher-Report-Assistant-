@@ -193,6 +193,7 @@
                         return { id: `Mock${i + 1}`, label: label };
                     });
                 } else if (isSharedStyle) {
+                    // Update Order: Assessment, Optionals, Improvement
                     finalCategories.push({id: "Assessment", label: "Assessment"});
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "Approaches to Learning"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
@@ -213,6 +214,7 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
+                    // Direct add without validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -363,7 +365,7 @@
             const [editingText, setEditingText] = useState(null);
             const [editText, setEditText] = useState("");
 
-            const supportsSkills = category.id !== "Homework"; // HPL, Language, Assessment, Improvement now all support skills
+            const supportsSkills = category.id !== "Homework";
             const currentDisplaySkill = supportsSkills ? activeSkill : "General";
 
             const handleSaveNewComment = () => {
@@ -602,11 +604,9 @@
                             </h3>
                             
                             <div className="flex gap-2">
-                                {!isHPLOrLang && (
-                                    <button onClick={() => onDeleteAllComments(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-red-600 text-xs font-bold rounded border border-gray-200 hover:bg-red-50 hover:border-red-200 transition shadow-sm">
-                                        <Trash2 className="w-3 h-3"/> Clear Bank
-                                    </button>
-                                )}
+                                <button onClick={() => onDeleteAllComments(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-red-600 text-xs font-bold rounded border border-gray-200 hover:bg-red-50 hover:border-red-200 transition shadow-sm" title={`Clear all ${activeCategory.label} comments for ${subject}`}>
+                                    <Trash2 className="w-3 h-3"/> Clear Bank
+                                </button>
 
                                 {isHPLOrLang && (
                                     <button onClick={() => onShareGlobal(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-purple-700 text-xs font-bold rounded border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition shadow-sm">
@@ -684,7 +684,7 @@
             const handleDownload = () => {
                 const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Class Reports</title></head><body>";
                 const footer = "</body></html>";
-                // Convert exactly two newlines to HTML paragraph breaks for word document so they format clearly
+                // Convert double newlines to HTML paragraph breaks for word document so they format clearly
                 const htmlContent = prompt.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
                 const sourceHTML = header + htmlContent + footer;
                 const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
@@ -1011,16 +1011,20 @@
 
             const handleDeleteAllInCategory = (catId) => {
                 const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
-                if (catId === 'HPL' || catId === 'Language') return; 
-                if (!confirm(`Are you sure you want to DELETE ALL comments for ${displayCat} in ${reportPeriod}? This cannot be undone.`)) return;
+                const isSharedCat = catId === 'HPL' || catId === 'Language';
+                const targetPeriod = isSharedCat ? 'Shared Bank' : reportPeriod;
+                
+                if (!confirm(`⚠️ Are you sure you want to DELETE ALL comments for ${displayCat} in ${targetPeriod} for ${subject} ONLY?\n\nThis will NOT delete comments in other subjects.`)) return;
 
-                const key = `${subject}::${reportPeriod}`;
+                const key = isSharedCat ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
                 const newBank = JSON.parse(JSON.stringify(customBank));
 
                 if (newBank[key] && newBank[key][catId]) {
                     delete newBank[key][catId]; 
                     updateCloud('customBank', newBank);
-                    alert(`All comments in the ${displayCat} category have been deleted.`);
+                    alert(`All comments in the ${displayCat} category for ${subject} have been deleted.`);
+                } else {
+                    alert(`No comments found to delete in ${displayCat} for ${subject}.`);
                 }
             };
 
