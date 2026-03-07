@@ -214,6 +214,7 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
+                    // Direct add without validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -526,11 +527,11 @@
             const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
-            // Plain text joined by single line break
+            // Plain text joined by a double newline (one blank line between paragraphs)
             const fullReportPreview = categories
                 .map(c => classData[student]?.[c.id]?.trim())
                 .filter(Boolean)
-                .join("\n");
+                .join("\n\n");
 
             const handleCopy = () => {
                 if (!fullReportPreview) return;
@@ -725,7 +726,6 @@
                         if(data.logo) setSharedLogo(data.logo);
                         setIsConnected(true);
                     } else {
-                        // FIX FOR EMPTY DB WIPE: Ensure we don't accidentally overwrite if network fails
                         SHARED_DOC_REF.get({ source: 'server' }).then(dbDoc => {
                             if (!dbDoc.exists) {
                                 SHARED_DOC_REF.set({
@@ -808,11 +808,14 @@
                 }
             };
             
-            const handleAddDepartment = (newDept) => {
-                if (!departments.includes(newDept)) {
-                    const newDepts = [...departments, newDept];
-                    SHARED_DOC_REF.update({ departments: newDepts });
-                    setDepartment(newDept);
+            const handleAddDepartment = () => {
+                const name = prompt("Enter name for new department:");
+                if (name && name.trim()) {
+                    if (departments.includes(name.trim())) {
+                        alert("Department already exists.");
+                        return;
+                    }
+                    onAddDepartment(name.trim());
                 }
             };
 
@@ -1024,8 +1027,8 @@
                         .filter(Boolean);
                         
                     if (comments.length > 0) {
-                        // Single line break in final output document
-                        out += comments.join("\n") + "\n";
+                        // Separate comments by a blank line (double \n) in the final document
+                        out += comments.join("\n\n") + "\n\n";
                     }
                     
                     if (index < students.length - 1) {
