@@ -213,6 +213,7 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
+                    // Direct add without validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -467,8 +468,8 @@
                                                 <>
                                                     <span className="flex-1 mr-2 text-gray-700">{opt}</span>
                                                     <div className="flex gap-1">
-                                                        <button onClick={() => { setEditingText(opt); setEditText(opt); }} className="text-blue-500 hover:bg-blue-50 p-1 rounded"><Pencil className="w-4 h-4"/></button>
-                                                        <button onClick={() => { if(confirm("Delete this shared comment?")) onDeleteComment(activeLevel, opt, currentDisplaySkill); }} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 className="w-4 h-4"/></button>
+                                                        <button onClick={() => { setEditingText(opt); setEditText(opt); }} className="text-blue-400 hover:text-blue-600"><Pencil className="w-4 h-4"/></button>
+                                                        <button onClick={() => { if(confirm("Delete this shared comment?")) onDeleteComment(activeLevel, opt, currentDisplaySkill); }} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>
                                                     </div>
                                                 </>
                                             )}
@@ -524,7 +525,8 @@
             const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
-            const fullReportPreview = categories.map(c => classData[student]?.[c.id]?.trim()).filter(Boolean).join(" ");
+            // NO BULLET POINTS - DOUBLE NEW LINE FOR CLEAR SEPARATION IN PREVIEW
+            const fullReportPreview = categories.map(c => classData[student]?.[c.id]?.trim()).filter(Boolean).join("\n\n");
 
             return (
                 <div className="space-y-6 animate-in">
@@ -782,11 +784,14 @@
                 }
             };
             
-            const handleAddDepartment = (newDept) => {
-                if (!departments.includes(newDept)) {
-                    const newDepts = [...departments, newDept];
-                    SHARED_DOC_REF.update({ departments: newDepts });
-                    setDepartment(newDept);
+            const handleAddDepartment = () => {
+                const name = prompt("Enter name for new department:");
+                if (name && name.trim()) {
+                    if (departments.includes(name.trim())) {
+                        alert("Department already exists.");
+                        return;
+                    }
+                    onAddDepartment(name.trim());
                 }
             };
 
@@ -993,10 +998,10 @@
                 let out = "";
                 students.forEach(s => {
                     out += `${s}\n`;
-                    let studentReport = activeCategories.map(c => classData[s]?.[c.id]?.trim()).filter(Boolean).join(" ");
-                    if (studentReport) {
-                        out += `${studentReport}\n`;
-                    }
+                    activeCategories.forEach(c => {
+                        // No bullet point in final generation, just pure text
+                        if (classData[s]?.[c.id]) out += `${classData[s][c.id].trim()}\n`;
+                    });
                     out += `\n-----------------------------------\n\n`;
                 });
                 setFinalBatchPrompt(out);
