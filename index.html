@@ -61,7 +61,7 @@
         const SHARED_DOC_REF = db.collection('app_data').doc('master_bank');
 
         // --- CONSTANTS ---
-        const HPL_LEVELS = ["Comments"]; // Single level bypasses the buttons for Approaches to Learning
+        const HPL_LEVELS = ["Comments"]; // Single level bypasses the buttons
         const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
         
         // --- ICONS ---
@@ -110,14 +110,46 @@
 
         // --- COMPONENTS ---
 
-        const ShareModal = ({ catId, currentSubject, allSubjects, onClose, onConfirm }) => {
+        const ShareModal = ({ catId, currentSubject, allSubjects, subjectDepartments, onClose, onConfirm }) => {
+            const [selectedDept, setSelectedDept] = useState("");
             const [selected, setSelected] = useState([]);
-            const availableSubjects = allSubjects.filter(s => s !== currentSubject);
-            const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
             
-            const toggleAll = () => {
-                if (selected.length === availableSubjects.length) setSelected([]);
-                else setSelected(availableSubjects);
+            const availableSubjects = allSubjects.filter(s => s !== currentSubject);
+            
+            // Group available subjects by department
+            const subjectsByDept = {};
+            availableSubjects.forEach(s => {
+                const dept = subjectDepartments[s] || "Other";
+                if (!subjectsByDept[dept]) subjectsByDept[dept] = [];
+                subjectsByDept[dept].push(s);
+            });
+
+            const validDepartments = Object.keys(subjectsByDept).sort();
+
+            // Default to current subject's department or the first available one
+            useEffect(() => {
+                const currentDept = subjectDepartments[currentSubject] || "Other";
+                if (validDepartments.includes(currentDept)) {
+                    setSelectedDept(currentDept);
+                } else if (validDepartments.length > 0) {
+                    setSelectedDept(validDepartments[0]);
+                }
+            }, [currentSubject, subjectDepartments]);
+
+            const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
+            const displayedSubjects = selectedDept ? (subjectsByDept[selectedDept] || []) : [];
+            const isAllDisplayedSelected = displayedSubjects.length > 0 && displayedSubjects.every(s => selected.includes(s));
+
+            const toggleAllInDept = () => {
+                if (isAllDisplayedSelected) {
+                    setSelected(selected.filter(s => !displayedSubjects.includes(s))); // Remove all from this dept
+                } else {
+                    const newSelected = [...selected];
+                    displayedSubjects.forEach(s => {
+                        if (!newSelected.includes(s)) newSelected.push(s);
+                    });
+                    setSelected(newSelected); // Add all from this dept
+                }
             };
 
             const toggleSubject = (s) => {
@@ -133,27 +165,55 @@
                             <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X className="w-6 h-6"/></button>
                         </div>
                         <div className="p-6 flex-1 overflow-y-auto">
-                            <p className="text-sm text-gray-600 mb-4">Select the subjects you want to copy your current <strong>{displayCat}</strong> comments and custom tabs to.</p>
+                            <p className="text-sm text-gray-600 mb-6">Select the subjects you want to copy your current <strong>{displayCat}</strong> comments and custom tabs to.</p>
                             
-                            <button onClick={toggleAll} className="mb-4 text-sm font-bold text-school-lightBlue hover:underline">
-                                {selected.length === availableSubjects.length ? "Deselect All" : "Select All"}
-                            </button>
+                            {validDepartments.length === 0 ? (
+                                <p className="text-sm text-red-500 italic">No other subjects exist to share with.</p>
+                            ) : (
+                                <>
+                                    <div className="mb-6">
+                                        <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-2"><Briefcase className="w-4 h-4"/> 1. Filter by Department</label>
+                                        <select 
+                                            value={selectedDept} 
+                                            onChange={e => setSelectedDept(e.target.value)}
+                                            className="w-full p-3 border border-school-lightBlue rounded-lg outline-none focus:ring-2 focus:ring-school-lightBlue text-sm font-medium bg-white cursor-pointer shadow-sm"
+                                        >
+                                            {validDepartments.map(d => (
+                                                <option key={d} value={d}>{d}</option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                            <div className="space-y-2">
-                                {availableSubjects.map(s => (
-                                    <label key={s} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                                        <input type="checkbox" checked={selected.includes(s)} onChange={() => toggleSubject(s)} className="w-5 h-5 text-school-lightBlue rounded focus:ring-school-lightBlue" />
-                                        <span className="font-medium text-gray-800">{s}</span>
-                                    </label>
-                                ))}
-                                {availableSubjects.length === 0 && <p className="text-gray-500 italic text-sm">No other subjects available.</p>}
-                            </div>
+                                    <div className="mb-3 flex justify-between items-end border-b pb-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">2. Select Subjects</label>
+                                        {displayedSubjects.length > 0 && (
+                                            <button onClick={toggleAllInDept} className="text-xs font-bold text-school-lightBlue hover:underline">
+                                                {isAllDisplayedSelected ? "Deselect All in Department" : "Select All in Department"}
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2 max-h-[350px] overflow-y-auto custom-scrollbar pr-2">
+                                        {displayedSubjects.map(s => (
+                                            <label key={s} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors shadow-sm ${selected.includes(s) ? 'bg-blue-50 border-school-lightBlue' : 'bg-white hover:bg-gray-50'}`}>
+                                                <input type="checkbox" checked={selected.includes(s)} onChange={() => toggleSubject(s)} className="w-5 h-5 text-school-lightBlue rounded focus:ring-school-lightBlue" />
+                                                <span className={`font-medium text-sm ${selected.includes(s) ? 'text-school-blue' : 'text-gray-700'}`}>{s}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
                         </div>
-                        <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
-                            <button onClick={onClose} className="px-4 py-2 border rounded-lg text-gray-600 font-bold hover:bg-gray-100">Cancel</button>
-                            <button onClick={() => onConfirm(selected)} disabled={selected.length === 0} className="px-6 py-2 bg-school-lightBlue text-white rounded-lg font-bold hover:bg-school-blue disabled:opacity-50 transition">
-                                Share
-                            </button>
+                        <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
+                            <span className="text-sm font-bold text-school-blue bg-blue-100 px-3 py-1 rounded-full">
+                                {selected.length} Selected
+                            </span>
+                            <div className="flex gap-2">
+                                <button onClick={onClose} className="px-4 py-2 border rounded-lg text-gray-600 font-bold hover:bg-gray-100 transition">Cancel</button>
+                                <button onClick={() => onConfirm(selected)} disabled={selected.length === 0} className="px-6 py-2 bg-school-lightBlue text-white rounded-lg font-bold hover:bg-school-blue disabled:opacity-50 transition shadow-md">
+                                    Share
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1272,6 +1332,8 @@
                             catId={shareModalData.catId}
                             currentSubject={subject}
                             allSubjects={allSubjectsList}
+                            subjectDepartments={subjectDepartments}
+                            departments={departments}
                             onClose={() => setShareModalData(null)}
                             onConfirm={(selected) => handleShareToSubjects(shareModalData.catId, selected)}
                         />
