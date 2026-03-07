@@ -526,7 +526,11 @@
             const getSkill = (catId) => activeSkills[catId] || "General";
 
             // ADDED BULLET POINTS HERE ONLY FOR THE PREVIEW
-            const fullReportPreview = categories.map(c => classData[student]?.[c.id]?.trim()).filter(Boolean).map(text => "• " + text).join("\n");
+            const fullReportPreview = categories
+                .map(c => classData[student]?.[c.id]?.trim())
+                .filter(Boolean)
+                .map(text => "• " + text)
+                .join("\n");
 
             return (
                 <div className="space-y-6 animate-in">
