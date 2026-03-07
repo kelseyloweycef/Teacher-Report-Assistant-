@@ -193,6 +193,7 @@
                         return { id: `Mock${i + 1}`, label: label };
                     });
                 } else if (isSharedStyle) {
+                    // Update Order: Assessment, Optionals, Improvement
                     finalCategories.push({id: "Assessment", label: "Assessment"});
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "HPL"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
@@ -525,11 +526,11 @@
             const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
-            // Plain text joined by double line break so they paste clearly as separate paragraphs
+            // Plain text joined by single line break
             const fullReportPreview = categories
                 .map(c => classData[student]?.[c.id]?.trim())
                 .filter(Boolean)
-                .join("\n\n");
+                .join("\n");
 
             const handleCopy = () => {
                 if (!fullReportPreview) return;
@@ -1016,13 +1017,20 @@
 
             const generateFinalBatch = () => {
                 let out = "";
-                students.forEach(s => {
+                students.forEach((s, index) => {
                     out += `${s}\n`;
-                    activeCategories.forEach(c => {
-                        // Double newline for hard paragraph break in final document
-                        if (classData[s]?.[c.id]) out += `${classData[s][c.id].trim()}\n\n`;
-                    });
-                    out += `-----------------------------------\n\n`;
+                    const comments = activeCategories
+                        .map(c => classData[s]?.[c.id]?.trim())
+                        .filter(Boolean);
+                        
+                    if (comments.length > 0) {
+                        // Single line break in final output document
+                        out += comments.join("\n") + "\n";
+                    }
+                    
+                    if (index < students.length - 1) {
+                        out += `-----------------------------------\n\n`;
+                    }
                 });
                 setFinalBatchPrompt(out);
             };
