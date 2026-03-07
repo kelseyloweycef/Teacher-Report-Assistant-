@@ -484,7 +484,7 @@
                                         className="flex-1 p-2 border border-blue-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-school-lightBlue outline-none cursor-pointer"
                                         onChange={(e) => {
                                             const newVal = e.target.value;
-                                            onChange(currentValue ? currentValue + " " + newVal : newVal);
+                                            onChange(currentValue ? currentValue + " " + newVal : newVal, true);
                                         }}
                                         value="" 
                                     >
@@ -494,7 +494,7 @@
                                     </select>
                                     
                                     {currentValue && (
-                                        <button onClick={() => onChange("")} className="px-3 py-2 bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-200 transition whitespace-nowrap">
+                                        <button onClick={() => onChange("", true)} className="px-3 py-2 bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-200 transition whitespace-nowrap">
                                             Clear {category.label}
                                         </button>
                                     )}
@@ -502,6 +502,15 @@
                              )}
                         </div>
                     )}
+                    
+                    {/* EDITABLE TEXT AREA: Teachers can freely type, backspace, or modify sentences */}
+                    <textarea 
+                        rows={3} 
+                        value={currentValue} 
+                        onChange={(e) => onChange(e.target.value, false)}
+                        className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-school-lightBlue outline-none transition-all shadow-sm" 
+                        placeholder={`The ${category.label} comment will build here. You can also click here to type or edit manually...`}
+                    ></textarea>
                 </div>
             );
         };
@@ -514,9 +523,11 @@
             const [activeTabId, setActiveTabId] = useState(categories[0]?.id);
             const [activeSkills, setActiveSkills] = useState({});
             const [copied, setCopied] = useState(false);
+            const [actionHistory, setActionHistory] = useState([]); // Global stack to undo dropdown clicks
 
             useEffect(() => {
                 setActiveTabId(categories[0]?.id);
+                setActionHistory([]); // reset history on new student
             }, [student, categories]);
 
             const activeCategory = categories.find(c => c.id === activeTabId) || categories[0];
@@ -526,11 +537,25 @@
             const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
-            // Joined by a single newline so they appear stacked tightly, separated only by a new line.
+            // Plain text joined by double newline so they look like distinct paragraphs
             const fullReportPreview = categories
                 .map(c => classData[student]?.[c.id]?.trim())
                 .filter(Boolean)
-                .join("\n");
+                .join("\n\n");
+
+            const handleCategoryUpdate = (catId, val, isDropdownOrClear) => {
+                if (isDropdownOrClear) {
+                    setActionHistory(prev => [...prev, { catId, oldVal: classData[student]?.[catId] || "" }]);
+                }
+                onUpdateStudent(student, catId, val);
+            };
+
+            const undoLastAction = () => {
+                if (actionHistory.length === 0) return;
+                const last = actionHistory[actionHistory.length - 1];
+                onUpdateStudent(student, last.catId, last.oldVal);
+                setActionHistory(prev => prev.slice(0, -1));
+            };
 
             const handleCopy = () => {
                 if (!fullReportPreview) return;
@@ -609,7 +634,7 @@
                                 category={activeCategory} 
                                 optionsMap={optionsMapGenerator(activeCategory.id)} 
                                 currentValue={classData[student]?.[activeCategory.id] || ""} 
-                                onChange={(val) => onUpdateStudent(student, activeCategory.id, val)} 
+                                onChange={(val, isDropdown) => handleCategoryUpdate(activeCategory.id, val, isDropdown)} 
                                 onAddComment={(level, text, skill) => onAddCustomComment(activeCategory.id, level, text, skill)} 
                                 onEditComment={(level, oldText, newText, skill) => onEditComment(activeCategory.id, level, oldText, newText, skill)}
                                 onDeleteComment={(level, text, skill) => onDeleteComment(activeCategory.id, level, text, skill)}
@@ -625,18 +650,28 @@
 
                     <div className="bg-blue-50 border border-school-lightBlue/30 rounded-xl p-5 shadow-inner mt-4">
                         <div className="flex justify-between items-center mb-3">
-                            <h3 className="text-xs font-bold text-school-blue uppercase tracking-wider">
-                                Final Report Preview for {student}
+                            <h3 className="text-xs font-bold text-school-blue uppercase tracking-wider flex items-center gap-2">
+                                <span>Final Report Preview for {student}</span>
                             </h3>
-                            {fullReportPreview && (
-                                <button 
-                                    onClick={handleCopy} 
-                                    className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded shadow-sm transition-colors border ${copied ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white text-school-lightBlue border-blue-200 hover:bg-blue-100'}`}
-                                >
-                                    {copied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                    {copied ? "Copied!" : "Copy Report"}
-                                </button>
-                            )}
+                            <div className="flex gap-2">
+                                {actionHistory.length > 0 && (
+                                    <button 
+                                        onClick={undoLastAction} 
+                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded shadow-sm transition-colors border bg-white text-orange-600 border-orange-200 hover:bg-orange-50"
+                                    >
+                                        <RotateCcw className="w-3 h-3" /> Undo Last Addition
+                                    </button>
+                                )}
+                                {fullReportPreview && (
+                                    <button 
+                                        onClick={handleCopy} 
+                                        className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded shadow-sm transition-colors border ${copied ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white text-school-lightBlue border-blue-200 hover:bg-blue-100'}`}
+                                    >
+                                        {copied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                        {copied ? "Copied!" : "Copy Report"}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         <div className="bg-white p-4 rounded-lg border border-blue-100 text-gray-800 whitespace-pre-wrap min-h-[100px] text-sm leading-relaxed shadow-sm">
                             {fullReportPreview || <span className="text-gray-400 italic">Comments will appear here as you select them...</span>}
@@ -650,7 +685,8 @@
             const handleDownload = () => {
                 const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Class Reports</title></head><body>";
                 const footer = "</body></html>";
-                const htmlContent = prompt.replace(/\n/g, "<br>");
+                // Convert exactly two newlines to HTML paragraph breaks for word document so they format clearly
+                const htmlContent = prompt.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
                 const sourceHTML = header + htmlContent + footer;
                 const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
                 const fileDownload = document.createElement("a");
@@ -1027,8 +1063,8 @@
                         .filter(Boolean);
                         
                     if (comments.length > 0) {
-                        // Single newline character between comments
-                        out += comments.join("\n") + "\n";
+                        // Hard paragraph break with double newline
+                        out += comments.join("\n\n") + "\n\n";
                     }
                     
                     if (index < students.length - 1) {
