@@ -59,6 +59,7 @@
         const SHARED_DOC_REF = db.collection('app_data').doc('master_bank');
 
         // --- CONSTANTS ---
+        const HPL_LEVELS = ["Comments"]; // Single level bypasses the buttons
         const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
         
         // --- ICONS ---
@@ -90,7 +91,7 @@
 
         const DEFAULT_COMMENT_BANK = {
             "IB History": {
-                "HPL": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                "HPL": { "Comments": {"General": []} },
                 "Language": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
                 "Assessment": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
                 "Homework": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
@@ -192,7 +193,6 @@
                         return { id: `Mock${i + 1}`, label: label };
                     });
                 } else if (isSharedStyle) {
-                    // Update Order: Assessment, Optionals, Improvement
                     finalCategories.push({id: "Assessment", label: "Assessment"});
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "Approaches to Learning"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
@@ -356,12 +356,20 @@
             onAddComment, onEditComment, onDeleteComment, levels,
             onAddSkill, onSwitchSkill, activeSkill, skillTabs, onDeleteSkill
         }) => {
-            const [activeLevel, setActiveLevel] = useState(null);
+            const [activeLevel, setActiveLevel] = useState(levels.length === 1 ? levels[0] : null);
             const [isAdding, setIsAdding] = useState(false);
             const [isManaging, setIsManaging] = useState(false);
             const [newComment, setNewComment] = useState("");
             const [editingText, setEditingText] = useState(null);
             const [editText, setEditText] = useState("");
+
+            useEffect(() => {
+                if (levels.length === 1) {
+                    setActiveLevel(levels[0]);
+                } else if (!levels.includes(activeLevel)) {
+                    setActiveLevel(null);
+                }
+            }, [levels, category.id]);
 
             const supportsSkills = category.id !== "Homework";
             const currentDisplaySkill = supportsSkills ? activeSkill : "General";
@@ -402,7 +410,12 @@
                                 {skillTabs.map(skill => (
                                     <div key={skill} className="relative group">
                                         <button 
-                                            onClick={() => { onSwitchSkill(skill); setActiveLevel(null); }} 
+                                            onClick={() => { 
+                                                onSwitchSkill(skill); 
+                                                setActiveLevel(levels.length === 1 ? levels[0] : null);
+                                                setIsAdding(false);
+                                                setIsManaging(false);
+                                            }} 
                                             className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${activeSkill === skill ? 'bg-school-blue text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                                         >
                                             {skill}
@@ -425,20 +438,25 @@
                         </div>
                     )}
 
-                    <div className="mb-4">
-                        <div className="flex flex-wrap gap-2">
-                            {levels.map((lvl) => (
-                                <button key={lvl} onClick={() => { setActiveLevel(lvl); setIsAdding(false); setIsManaging(false); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${activeLevel === lvl ? 'bg-school-lightBlue text-white border-school-lightBlue shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-                                    {lvl}
-                                </button>
-                            ))}
+                    {levels.length > 1 && (
+                        <div className="mb-4">
+                            <div className="flex flex-wrap gap-2">
+                                {levels.map((lvl) => (
+                                    <button key={lvl} onClick={() => { setActiveLevel(lvl); setIsAdding(false); setIsManaging(false); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${activeLevel === lvl ? 'bg-school-lightBlue text-white border-school-lightBlue shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                                        {lvl}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
                     
                     {activeLevel && (
                         <div className="mb-2 space-y-3 bg-blue-50 p-4 rounded-lg border border-blue-100">
                              <div className="flex justify-between items-center border-b border-blue-200 pb-2">
-                                <span className="text-xs font-bold text-school-blue uppercase">{supportsSkills && currentDisplaySkill !== 'General' ? `${currentDisplaySkill}: ` : ''}{activeLevel} Comments</span>
+                                <span className="text-xs font-bold text-school-blue uppercase">
+                                    {supportsSkills && currentDisplaySkill !== 'General' ? `${currentDisplaySkill} ` : ''}
+                                    {levels.length > 1 ? `${activeLevel} Comments` : 'Comments'}
+                                </span>
                                 <div className="flex gap-2">
                                     <button onClick={() => { setIsManaging(!isManaging); setIsAdding(false); }} className={`text-xs font-bold flex items-center gap-1 ${isManaging ? 'text-school-blue' : 'text-gray-500 hover:text-gray-700'}`} title="Manage Comments"><Settings className="w-3 h-3"/> Manage</button>
                                     <button onClick={() => { setIsAdding(!isAdding); setIsManaging(false); }} className="text-xs text-school-lightBlue font-bold flex items-center gap-1 hover:underline"><PlusCircle className="w-3 h-3"/> Add New</button>
@@ -515,7 +533,7 @@
         };
 
         const StudentStep = ({ 
-            student, studentIndex, totalStudents, categories, classData, optionsMapGenerator, 
+            subject, student, studentIndex, totalStudents, categories, classData, optionsMapGenerator, 
             onUpdateStudent, onAddCustomComment, onEditComment, onDeleteComment, 
             onShareGlobal, onSharePeriod, onDeleteAllComments, reportPeriod, onAddSkill, skillTabs, onDeleteSkill, subjectSkills
         }) => {
@@ -533,10 +551,9 @@
             const isHPLOrLang = activeCategory.id === 'HPL' || activeCategory.id === 'Language';
             const isSkillCategory = activeCategory.id !== 'Homework';
             const currentSkillTabs = isSkillCategory ? (subjectSkills[activeCategory.id] || ["General"]) : ["General"];
-            const levels = STANDARD_LEVELS;
+            const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
-            // Gets the active comments in order
             const activeComments = categories
                 .map(c => classData[student]?.[c.id]?.trim())
                 .filter(Boolean);
@@ -630,6 +647,7 @@
                         
                         <div className="p-6">
                             <CommentCategory 
+                                key={`${student}-${activeCategory.id}`}
                                 category={activeCategory} 
                                 optionsMap={optionsMapGenerator(activeCategory.id)} 
                                 currentValue={classData[student]?.[activeCategory.id] || ""} 
@@ -805,7 +823,7 @@
                 const sharedKey = `${newSubject}::SHARED`;
                 if (!newBank[sharedKey]) {
                      newBank[sharedKey] = {
-                        "HPL": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} },
+                        "HPL": { "Comments": {"General": []} },
                         "Language": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} },
                         "Assessment": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} },
                         "Homework": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} },
@@ -958,7 +976,7 @@
                 const newBank = JSON.parse(JSON.stringify(customBank));
                 const newSubjectSkills = JSON.parse(JSON.stringify(subjectSkills));
                 const allSubjects = [...customSubjects]; 
-                const levels = STANDARD_LEVELS;
+                const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
                 const currentCatSkills = subjectSkills[subject]?.[catId] || ["General"];
 
                 allSubjects.forEach(targetSubj => {
@@ -1047,7 +1065,7 @@
 
             const getOptionsMap = (catId) => {
                 const key = getBankKey(catId);
-                const levels = STANDARD_LEVELS;
+                const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
                 const map = {};
                 
                 const mySkills = (subjectSkills[subject]?.[catId]) || ["General"];
@@ -1134,6 +1152,7 @@
                         {activeStudent && (
                             <StudentStep
                                 key={activeStudent}
+                                subject={subject}
                                 student={activeStudent}
                                 studentIndex={currentStepIndex}
                                 totalStudents={students.length}
