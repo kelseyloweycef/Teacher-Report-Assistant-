@@ -61,7 +61,7 @@
         const SHARED_DOC_REF = db.collection('app_data').doc('master_bank');
 
         // --- CONSTANTS ---
-        const HPL_LEVELS = ["Comments"]; // Single level bypasses the buttons for Approaches to Learning
+        const HPL_LEVELS = ["Comments"]; 
         const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
         
         // --- ICONS ---
@@ -112,20 +112,23 @@
 
         // --- COMPONENTS ---
 
-        const ShareModal = ({ catId, currentSubject, allSubjects, subjectDepartments, onClose, onConfirm }) => {
+        const ShareModal = ({ catId, currentSubject, allSubjects, subjectDepartments, departments, onClose, onConfirm }) => {
             const [selected, setSelected] = useState([]);
             const [expandedDepts, setExpandedDepts] = useState([]);
             
             const availableSubjects = allSubjects.filter(s => s !== currentSubject);
             
-            // Group available subjects by department
+            // Group available subjects by department, ensuring it uses actual current department structure
             const subjectsByDept = {};
             availableSubjects.forEach(s => {
-                const dept = subjectDepartments[s] || "Other";
+                let dept = subjectDepartments[s] || "Other";
+                if (!departments.includes(dept)) dept = "Other"; // Fallback if dept got deleted but subject wasn't caught
+                
                 if (!subjectsByDept[dept]) subjectsByDept[dept] = [];
                 subjectsByDept[dept].push(s);
             });
 
+            // Only show valid departments that actually have subjects in them
             const validDepartments = Object.keys(subjectsByDept).sort();
 
             // Default to expanding the current subject's department
@@ -136,7 +139,7 @@
                 } else if (validDepartments.length > 0) {
                     setExpandedDepts([validDepartments[0]]);
                 }
-            }, [currentSubject, subjectDepartments]);
+            }, [currentSubject, subjectDepartments, validDepartments]);
 
             const toggleDeptExpand = (dept) => {
                 if (expandedDepts.includes(dept)) {
@@ -1024,9 +1027,17 @@
             };
 
             const handleDeleteDepartment = (deptToDelete) => {
-                 if (confirm(`Delete department "${deptToDelete}"?`)) {
+                 if (confirm(`Delete department "${deptToDelete}"? Any subjects in this department will be moved to "Other".`)) {
                     const newDepts = departments.filter(d => d !== deptToDelete);
-                    SHARED_DOC_REF.update({ departments: newDepts });
+                    
+                    const updatedDepts = { ...subjectDepartments };
+                    Object.keys(updatedDepts).forEach(subj => {
+                        if (updatedDepts[subj] === deptToDelete) {
+                            updatedDepts[subj] = "Other";
+                        }
+                    });
+
+                    SHARED_DOC_REF.update({ departments: newDepts, subjectDepartments: updatedDepts });
                     if(department === deptToDelete) setDepartment("");
                  }
             };
@@ -1269,7 +1280,7 @@
                 return text && text.trim().length > 0;
             }) : true;
 
-            const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]));
+            const allSubjectsList = Object.keys(subjectDepartments);
 
             return (
                 <div className="min-h-screen bg-gray-50 pb-32">
