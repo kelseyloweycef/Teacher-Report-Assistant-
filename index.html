@@ -32,9 +32,11 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .animate-in { animation: fadeIn 0.5s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-in-right { animation: slideInRight 0.3s ease-out forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
-<body class="bg-gray-50 text-slate-800 antialiased">
+<body class="bg-gray-50 text-slate-800 antialiased overflow-x-hidden">
     
     <div id="root"></div>
 
@@ -59,7 +61,7 @@
         const SHARED_DOC_REF = db.collection('app_data').doc('master_bank');
 
         // --- CONSTANTS ---
-        const HPL_LEVELS = ["Comments"]; // Single level bypasses the buttons
+        const HPL_LEVELS = ["Comments"]; // Single level bypasses the buttons for Approaches to Learning
         const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
         
         // --- ICONS ---
@@ -107,6 +109,57 @@
         };
 
         // --- COMPONENTS ---
+
+        const ShareModal = ({ catId, currentSubject, allSubjects, onClose, onConfirm }) => {
+            const [selected, setSelected] = useState([]);
+            const availableSubjects = allSubjects.filter(s => s !== currentSubject);
+            const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
+            
+            const toggleAll = () => {
+                if (selected.length === availableSubjects.length) setSelected([]);
+                else setSelected(availableSubjects);
+            };
+
+            const toggleSubject = (s) => {
+                if (selected.includes(s)) setSelected(selected.filter(x => x !== s));
+                else setSelected([...selected, s]);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/40 z-[100] flex justify-end">
+                    <div className="bg-white w-full max-w-sm h-full shadow-2xl flex flex-col animate-in-right">
+                        <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+                            <h2 className="text-xl font-bold text-school-blue">Share {displayCat}</h2>
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X className="w-6 h-6"/></button>
+                        </div>
+                        <div className="p-6 flex-1 overflow-y-auto">
+                            <p className="text-sm text-gray-600 mb-4">Select the subjects you want to copy your current <strong>{displayCat}</strong> comments and custom tabs to.</p>
+                            
+                            <button onClick={toggleAll} className="mb-4 text-sm font-bold text-school-lightBlue hover:underline">
+                                {selected.length === availableSubjects.length ? "Deselect All" : "Select All"}
+                            </button>
+
+                            <div className="space-y-2">
+                                {availableSubjects.map(s => (
+                                    <label key={s} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" checked={selected.includes(s)} onChange={() => toggleSubject(s)} className="w-5 h-5 text-school-lightBlue rounded focus:ring-school-lightBlue" />
+                                        <span className="font-medium text-gray-800">{s}</span>
+                                    </label>
+                                ))}
+                                {availableSubjects.length === 0 && <p className="text-gray-500 italic text-sm">No other subjects available.</p>}
+                            </div>
+                        </div>
+                        <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
+                            <button onClick={onClose} className="px-4 py-2 border rounded-lg text-gray-600 font-bold hover:bg-gray-100">Cancel</button>
+                            <button onClick={() => onConfirm(selected)} disabled={selected.length === 0} className="px-6 py-2 bg-school-lightBlue text-white rounded-lg font-bold hover:bg-school-blue disabled:opacity-50 transition">
+                                Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
 
         const Header = ({ isConnected, logo, onLogoUpdate }) => {
             const DEFAULT_LOGO_URL = "https://cdn-icons-png.flaticon.com/512/3665/3665939.png"; 
@@ -193,6 +246,7 @@
                         return { id: `Mock${i + 1}`, label: label };
                     });
                 } else if (isSharedStyle) {
+                    // Update Order: Assessment, Optionals, Improvement
                     finalCategories.push({id: "Assessment", label: "Assessment"});
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "Approaches to Learning"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
@@ -213,6 +267,7 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
+                    // Direct add without validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -535,7 +590,7 @@
         const StudentStep = ({ 
             subject, student, studentIndex, totalStudents, categories, classData, optionsMapGenerator, 
             onUpdateStudent, onAddCustomComment, onEditComment, onDeleteComment, 
-            onShareGlobal, onSharePeriod, onDeleteAllComments, reportPeriod, onAddSkill, skillTabs, onDeleteSkill, subjectSkills
+            onOpenShareModal, onSharePeriod, onDeleteAllComments, reportPeriod, onAddSkill, skillTabs, onDeleteSkill, subjectSkills
         }) => {
             const [activeTabId, setActiveTabId] = useState(categories[0]?.id);
             const [activeSkills, setActiveSkills] = useState({});
@@ -548,7 +603,8 @@
             }, [student, categories]);
 
             const activeCategory = categories.find(c => c.id === activeTabId) || categories[0];
-            const isHPLOrLang = activeCategory.id === 'HPL' || activeCategory.id === 'Language';
+            const isSubjectShareable = ['HPL', 'Language', 'Homework'].includes(activeCategory.id);
+            const isPeriodShareable = !['HPL', 'Language'].includes(activeCategory.id); 
             const isSkillCategory = activeCategory.id !== 'Homework';
             const currentSkillTabs = isSkillCategory ? (subjectSkills[activeCategory.id] || ["General"]) : ["General"];
             const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
@@ -572,8 +628,6 @@
                 setActionHistory(prev => prev.slice(0, -1));
             };
 
-            // SINGLE NEWLINE joining for copying, ensures they paste correctly to Word/Systems 
-            // without double gaps, allowing manual bulleting later.
             const handleCopy = () => {
                 if (activeComments.length === 0) return;
                 const clipboardText = activeComments.join("\n");
@@ -625,19 +679,19 @@
                                     <Trash2 className="w-3 h-3"/> Clear Bank
                                 </button>
 
-                                {isHPLOrLang && (
-                                    <button onClick={() => onShareGlobal(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-purple-700 text-xs font-bold rounded border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition shadow-sm">
-                                        <Globe className="w-3 h-3"/> Update All
+                                {isSubjectShareable && (
+                                    <button onClick={() => onOpenShareModal(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-purple-700 text-xs font-bold rounded border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition shadow-sm">
+                                        <Globe className="w-3 h-3"/> Share w/ Subjects
                                     </button>
                                 )}
 
-                                {!isHPLOrLang && reportPeriod === "Progress 2" && (
+                                {isPeriodShareable && reportPeriod === "Progress 2" && (
                                     <button onClick={() => onSharePeriod(activeCategory.id, "Progress 3")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
                                         <Share className="w-3 h-3"/> Share P2 ➔ P3
                                     </button>
                                 )}
 
-                                {!isHPLOrLang && reportPeriod === "Progress 3" && (
+                                {isPeriodShareable && reportPeriod === "Progress 3" && (
                                     <button onClick={() => onSharePeriod(activeCategory.id, "Progress 2")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
                                         <Share className="w-3 h-3"/> Share P3 ➔ P2
                                     </button>
@@ -771,6 +825,9 @@
             const [classData, setClassData] = useState({});
             const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
             const [activeCategories, setActiveCategories] = useState([]);
+            
+            // Modal state
+            const [shareModalData, setShareModalData] = useState(null);
 
             useEffect(() => {
                 const unsubscribe = SHARED_DOC_REF.onSnapshot((doc) => {
@@ -894,7 +951,8 @@
                 updateCloud('mockTitles', { ...mockTitles, [subject]: current });
             };
 
-            const getBankKey = (catId) => (catId === 'HPL' || catId === 'Language') ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
+            const getSourceKeyLogic = (cId, subj) => (cId === 'HPL' || cId === 'Language') ? `${subj}::SHARED` : `${subj}::${reportPeriod}`;
+            const getBankKey = (catId) => getSourceKeyLogic(catId, subject);
 
             const handleAddCustomComment = (catId, level, text, skill = "General") => {
                 const key = getBankKey(catId);
@@ -943,7 +1001,7 @@
             };
 
             const handleAddSkill = (catId, newSkill) => {
-                if (catId === 'Homework') return; // Allowed everywhere except homework
+                if (catId === 'Homework') return; 
 
                 const currentSkills = subjectSkills[subject] || {};
                 const catSkills = currentSkills[catId] || ["General"];
@@ -964,25 +1022,23 @@
                 updateCloud('subjectSkills', updatedSubjectSkills);
             };
 
-            const handleShareGlobal = (catId) => {
+            const handleShareToSubjects = (catId, targetSubjects) => {
                 const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
-                if (!confirm(`Update ${displayCat} comments for ALL subjects? This will add your current ${displayCat} comments to every other subject's bank.`)) return;
+                const sourceKeyLocal = getSourceKeyLogic(catId, subject);
+                const sourceCategoryData = customBank[sourceKeyLocal]?.[catId]; 
                 
-                const sourceKey = `${subject}::SHARED`;
-                const sourceCategoryData = customBank[sourceKey]?.[catId]; 
-                
-                if (!sourceCategoryData) return alert("No comments to share.");
+                if (!sourceCategoryData) {
+                    alert("No comments to share.");
+                    return;
+                }
 
                 const newBank = JSON.parse(JSON.stringify(customBank));
                 const newSubjectSkills = JSON.parse(JSON.stringify(subjectSkills));
-                const allSubjects = [...customSubjects]; 
                 const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
                 const currentCatSkills = subjectSkills[subject]?.[catId] || ["General"];
 
-                allSubjects.forEach(targetSubj => {
-                    if (targetSubj === subject) return; 
-
-                    const targetKey = `${targetSubj}::SHARED`;
+                targetSubjects.forEach(targetSubj => {
+                    const targetKey = getSourceKeyLogic(catId, targetSubj);
                     if (!newBank[targetKey]) newBank[targetKey] = {};
                     if (!newBank[targetKey][catId]) newBank[targetKey][catId] = {};
 
@@ -1010,7 +1066,8 @@
                     customBank: newBank,
                     subjectSkills: newSubjectSkills
                 }).then(() => {
-                    alert(`Successfully updated ${displayCat} comments and tabs across ${allSubjects.length - 1} other subjects!`);
+                    alert(`Successfully updated ${displayCat} comments and tabs across ${targetSubjects.length} subjects!`);
+                    setShareModalData(null);
                 }).catch(console.error);
             };
 
@@ -1126,6 +1183,8 @@
                 return text && text.trim().length > 0;
             }) : true;
 
+            const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]));
+
             return (
                 <div className="min-h-screen bg-gray-50 pb-32">
                     <Header isConnected={isConnected} logo={sharedLogo} onLogoUpdate={(l) => updateCloud('logo', l)} />
@@ -1133,7 +1192,7 @@
                         {isSetup && (
                             <ClassSetup
                                 subject={subject} setSubject={setSubject}
-                                subjectOptions={[...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]}
+                                subjectOptions={allSubjectsList}
                                 department={department} setDepartment={setDepartment}
                                 departments={departments}
                                 subjectDepartments={subjectDepartments}
@@ -1163,7 +1222,7 @@
                                 onAddCustomComment={handleAddCustomComment}
                                 onEditComment={handleEditComment}
                                 onDeleteComment={handleDeleteComment}
-                                onShareGlobal={handleShareGlobal}
+                                onOpenShareModal={(catId) => setShareModalData({ catId })}
                                 onSharePeriod={handleSharePeriod}
                                 onDeleteAllComments={handleDeleteAllInCategory}
                                 reportPeriod={reportPeriod}
@@ -1204,6 +1263,17 @@
                             }}
                             isLastStep={currentStepIndex === students.length - 1}
                             disableNext={!isCurrentStudentComplete}
+                        />
+                    )}
+
+                    {/* SHARE OVERLAY MODAL */}
+                    {shareModalData && (
+                        <ShareModal 
+                            catId={shareModalData.catId}
+                            currentSubject={subject}
+                            allSubjects={allSubjectsList}
+                            onClose={() => setShareModalData(null)}
+                            onConfirm={(selected) => handleShareToSubjects(shareModalData.catId, selected)}
                         />
                     )}
                 </div>
