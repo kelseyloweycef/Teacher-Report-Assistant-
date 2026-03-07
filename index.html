@@ -214,7 +214,6 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
-                    // Direct add without validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -527,11 +526,11 @@
             const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
-            // Plain text joined by a double newline (one blank line between paragraphs)
+            // Joined by a single newline so they appear stacked tightly, separated only by a new line.
             const fullReportPreview = categories
                 .map(c => classData[student]?.[c.id]?.trim())
                 .filter(Boolean)
-                .join("\n\n");
+                .join("\n");
 
             const handleCopy = () => {
                 if (!fullReportPreview) return;
@@ -726,6 +725,7 @@
                         if(data.logo) setSharedLogo(data.logo);
                         setIsConnected(true);
                     } else {
+                        // FIX FOR EMPTY DB WIPE: Ensure we don't accidentally overwrite if network fails
                         SHARED_DOC_REF.get({ source: 'server' }).then(dbDoc => {
                             if (!dbDoc.exists) {
                                 SHARED_DOC_REF.set({
@@ -1027,8 +1027,8 @@
                         .filter(Boolean);
                         
                     if (comments.length > 0) {
-                        // Separate comments by a blank line (double \n) in the final document
-                        out += comments.join("\n\n") + "\n\n";
+                        // Single newline character between comments
+                        out += comments.join("\n") + "\n";
                     }
                     
                     if (index < students.length - 1) {
