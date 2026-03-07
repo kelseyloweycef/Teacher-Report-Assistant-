@@ -363,7 +363,7 @@
             const [editingText, setEditingText] = useState(null);
             const [editText, setEditText] = useState("");
 
-            const supportsSkills = category.id === "Assessment" || category.id === "Improvement";
+            const supportsSkills = category.id !== "Homework"; // HPL, Language, Assessment, Improvement now all support skills
             const currentDisplaySkill = supportsSkills ? activeSkill : "General";
 
             const handleSaveNewComment = () => {
@@ -384,7 +384,7 @@
             const activeOptions = (activeLevel && optionsMap && optionsMap[currentDisplaySkill] && optionsMap[currentDisplaySkill][activeLevel]) || [];
 
             const handleAddSkillPrompt = () => {
-                const newSkill = prompt("Enter new skill name (e.g. 'Analysis', 'Algebra'):");
+                const newSkill = prompt("Enter new custom tab name (e.g. 'Analysis', 'Grammar'):");
                 if (newSkill && newSkill.trim()) {
                     onAddSkill(newSkill.trim());
                 }
@@ -398,7 +398,7 @@
                     {supportsSkills && (
                         <div className="mb-4 border-b border-gray-200 pb-2">
                             <div className="flex flex-wrap gap-2 items-center">
-                                <span className="text-xs font-bold text-gray-400 uppercase mr-2">Skills:</span>
+                                <span className="text-xs font-bold text-gray-400 uppercase mr-2">Tabs:</span>
                                 {skillTabs.map(skill => (
                                     <div key={skill} className="relative group">
                                         <button 
@@ -411,14 +411,14 @@
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); onDeleteSkill(skill); }} 
                                                 className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                                                title="Delete this skill category"
+                                                title="Delete this custom tab"
                                             >
                                                 <X className="w-3 h-3" />
                                             </button>
                                         )}
                                     </div>
                                 ))}
-                                <button onClick={handleAddSkillPrompt} className="p-1 bg-green-50 text-green-600 rounded-full hover:bg-green-100 border border-green-200" title="Add Skill Category">
+                                <button onClick={handleAddSkillPrompt} className="p-1 bg-green-50 text-green-600 rounded-full hover:bg-green-100 border border-green-200" title="Add Custom Tab">
                                     <PlusCircle className="w-4 h-4" />
                                 </button>
                             </div>
@@ -531,12 +531,12 @@
 
             const activeCategory = categories.find(c => c.id === activeTabId) || categories[0];
             const isHPLOrLang = activeCategory.id === 'HPL' || activeCategory.id === 'Language';
-            const isSkillCategory = activeCategory.id === 'Assessment' || activeCategory.id === 'Improvement';
+            const isSkillCategory = activeCategory.id !== 'Homework';
             const currentSkillTabs = isSkillCategory ? (subjectSkills[activeCategory.id] || ["General"]) : ["General"];
             const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
-            // Preview text joined by double newline so they look like distinct paragraphs
+            // Plain text joined by a double newline (one blank line between paragraphs)
             const fullReportPreview = categories
                 .map(c => classData[student]?.[c.id]?.trim())
                 .filter(Boolean)
@@ -917,7 +917,7 @@
             };
 
             const handleAddSkill = (catId, newSkill) => {
-                if (catId !== 'Assessment' && catId !== 'Improvement') return;
+                if (catId === 'Homework') return; // Allowed everywhere except homework
 
                 const currentSkills = subjectSkills[subject] || {};
                 const catSkills = currentSkills[catId] || ["General"];
@@ -930,7 +930,7 @@
             };
 
             const handleDeleteSkill = (catId, skillToDelete) => {
-                if (catId !== 'Assessment' && catId !== 'Improvement') return;
+                if (catId === 'Homework') return;
                 const currentSkills = subjectSkills[subject] || {};
                 const catSkills = currentSkills[catId] || ["General"];
                 const newCatSkills = catSkills.filter(s => s !== skillToDelete);
@@ -948,8 +948,10 @@
                 if (!sourceCategoryData) return alert("No comments to share.");
 
                 const newBank = JSON.parse(JSON.stringify(customBank));
+                const newSubjectSkills = JSON.parse(JSON.stringify(subjectSkills));
                 const allSubjects = [...customSubjects]; 
                 const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
+                const currentCatSkills = subjectSkills[subject]?.[catId] || ["General"];
 
                 allSubjects.forEach(targetSubj => {
                     if (targetSubj === subject) return; 
@@ -957,6 +959,11 @@
                     const targetKey = `${targetSubj}::SHARED`;
                     if (!newBank[targetKey]) newBank[targetKey] = {};
                     if (!newBank[targetKey][catId]) newBank[targetKey][catId] = {};
+
+                    let targetSubjectSkillsObj = newSubjectSkills[targetSubj] || {};
+                    let targetCatSkills = targetSubjectSkillsObj[catId] || ["General"];
+                    targetSubjectSkillsObj[catId] = Array.from(new Set([...targetCatSkills, ...currentCatSkills]));
+                    newSubjectSkills[targetSubj] = targetSubjectSkillsObj;
 
                     levels.forEach(lvl => {
                         const sourceLevelObj = sourceCategoryData[lvl] || {};
@@ -973,8 +980,12 @@
                     });
                 });
 
-                updateCloud('customBank', newBank);
-                alert(`Successfully updated ${displayCat} comments across ${allSubjects.length - 1} other subjects!`);
+                SHARED_DOC_REF.update({
+                    customBank: newBank,
+                    subjectSkills: newSubjectSkills
+                }).then(() => {
+                    alert(`Successfully updated ${displayCat} comments and tabs across ${allSubjects.length - 1} other subjects!`);
+                }).catch(console.error);
             };
 
             const handleSharePeriod = (catId, targetPeriod) => {
@@ -1065,7 +1076,7 @@
                         .filter(Boolean);
                         
                     if (comments.length > 0) {
-                        // Separate comments by a double newline so they space out perfectly in the final document
+                        // Double newline ensures 1 fully blank line between comments in output
                         out += comments.join("\n\n") + "\n\n";
                     }
                     
