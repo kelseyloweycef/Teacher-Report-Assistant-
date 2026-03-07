@@ -213,7 +213,6 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
-                    // Direct add without validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -364,10 +363,7 @@
             const [editingText, setEditingText] = useState(null);
             const [editText, setEditText] = useState("");
 
-            // Determine if this category supports skills (Assessment/Improvement ONLY)
             const supportsSkills = category.id === "Assessment" || category.id === "Improvement";
-            
-            // For Homework/HPL/Language, activeSkill is always "General"
             const currentDisplaySkill = supportsSkills ? activeSkill : "General";
 
             const handleSaveNewComment = () => {
@@ -385,7 +381,6 @@
                 }
             };
 
-            // Get options specifically for the active skill
             const activeOptions = (activeLevel && optionsMap && optionsMap[currentDisplaySkill] && optionsMap[currentDisplaySkill][activeLevel]) || [];
 
             const handleAddSkillPrompt = () => {
@@ -395,14 +390,11 @@
                 }
             };
 
-            // Dynamic Placeholder Text
             let placeholderText = `Select a ${currentDisplaySkill} comment...`;
             if(category.id === "Homework") placeholderText = "Select a homework comment...";
 
             return (
-                <div className="p-4 bg-white rounded-xl shadow-sm border-l-4 border-school-lightBlue relative">
-                    
-                    {/* SKILL TABS - ONLY FOR ASSESSMENT/IMPROVEMENT */}
+                <div className="w-full">
                     {supportsSkills && (
                         <div className="mb-4 border-b border-gray-200 pb-2">
                             <div className="flex flex-wrap gap-2 items-center">
@@ -415,7 +407,6 @@
                                         >
                                             {skill}
                                         </button>
-                                        {/* DELETE SKILL BUTTON (Only for custom skills, not General) */}
                                         {skill !== "General" && activeSkill === skill && (
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); onDeleteSkill(skill); }} 
@@ -437,7 +428,7 @@
                     <div className="mb-4">
                         <div className="flex flex-wrap gap-2">
                             {levels.map((lvl) => (
-                                <button key={lvl} onClick={() => { setActiveLevel(lvl); setIsAdding(false); setIsManaging(false); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${activeLevel === lvl ? 'bg-school-lightBlue text-white border-school-lightBlue' : 'bg-white text-gray-600 border-gray-200'}`}>
+                                <button key={lvl} onClick={() => { setActiveLevel(lvl); setIsAdding(false); setIsManaging(false); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${activeLevel === lvl ? 'bg-school-lightBlue text-white border-school-lightBlue shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
                                     {lvl}
                                 </button>
                             ))}
@@ -445,39 +436,39 @@
                     </div>
                     
                     {activeLevel && (
-                        <div className="mb-4 space-y-3">
-                             <div className="flex justify-between items-center border-b pb-2">
-                                <span className="text-xs font-bold text-gray-500 uppercase">{supportsSkills && currentDisplaySkill !== 'General' ? `${currentDisplaySkill}: ` : ''}{activeLevel} Comments</span>
+                        <div className="mb-2 space-y-3 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                             <div className="flex justify-between items-center border-b border-blue-200 pb-2">
+                                <span className="text-xs font-bold text-school-blue uppercase">{supportsSkills && currentDisplaySkill !== 'General' ? `${currentDisplaySkill}: ` : ''}{activeLevel} Comments</span>
                                 <div className="flex gap-2">
-                                    <button onClick={() => { setIsManaging(!isManaging); setIsAdding(false); }} className={`text-xs font-bold flex items-center gap-1 ${isManaging ? 'text-school-blue' : 'text-gray-400 hover:text-gray-600'}`} title="Manage Comments"><Settings className="w-3 h-3"/> Manage</button>
-                                    <button onClick={() => { setIsAdding(!isAdding); setIsManaging(false); }} className="text-xs text-school-lightBlue font-bold flex items-center gap-1"><PlusCircle className="w-3 h-3"/> Add</button>
+                                    <button onClick={() => { setIsManaging(!isManaging); setIsAdding(false); }} className={`text-xs font-bold flex items-center gap-1 ${isManaging ? 'text-school-blue' : 'text-gray-500 hover:text-gray-700'}`} title="Manage Comments"><Settings className="w-3 h-3"/> Manage</button>
+                                    <button onClick={() => { setIsAdding(!isAdding); setIsManaging(false); }} className="text-xs text-school-lightBlue font-bold flex items-center gap-1 hover:underline"><PlusCircle className="w-3 h-3"/> Add New</button>
                                 </div>
                              </div>
 
                              {isAdding && (
                                 <div className="flex gap-2">
-                                    <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} className="flex-1 border p-1 rounded text-sm bg-blue-50" placeholder="Type new comment..." autoFocus />
-                                    <button onClick={handleSaveNewComment} className="bg-green-600 text-white px-2 rounded text-xs">Save</button>
+                                    <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} className="flex-1 border border-blue-300 p-2 rounded text-sm bg-white outline-none focus:ring-2 focus:ring-school-lightBlue" placeholder="Type new comment..." autoFocus />
+                                    <button onClick={handleSaveNewComment} className="bg-green-600 text-white px-3 font-bold rounded text-xs hover:bg-green-700">Save</button>
                                 </div>
                              )}
 
                              {isManaging && (
-                                <div className="bg-gray-50 border rounded-lg p-2 max-h-48 overflow-y-auto custom-scrollbar">
+                                <div className="bg-white border border-blue-200 rounded-lg p-2 max-h-48 overflow-y-auto custom-scrollbar">
                                     {activeOptions.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No comments yet.</p>}
                                     {activeOptions.map((opt, idx) => (
-                                        <div key={idx} className="flex items-center justify-between text-xs py-1 border-b last:border-0 border-gray-200">
+                                        <div key={idx} className="flex items-center justify-between text-xs py-2 border-b last:border-0 border-gray-100">
                                             {editingText === opt ? (
                                                 <div className="flex-1 flex gap-2">
-                                                    <input type="text" value={editText} onChange={(e)=>setEditText(e.target.value)} className="flex-1 border p-1 rounded" />
-                                                    <button onClick={() => handleSaveEdit(opt)} className="text-green-600"><Save className="w-3 h-3"/></button>
-                                                    <button onClick={() => setEditingText(null)} className="text-red-500"><X className="w-3 h-3"/></button>
+                                                    <input type="text" value={editText} onChange={(e)=>setEditText(e.target.value)} className="flex-1 border p-1 rounded outline-none focus:border-school-lightBlue" />
+                                                    <button onClick={() => handleSaveEdit(opt)} className="text-green-600 hover:bg-green-50 p-1 rounded"><Save className="w-4 h-4"/></button>
+                                                    <button onClick={() => setEditingText(null)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X className="w-4 h-4"/></button>
                                                 </div>
                                             ) : (
                                                 <>
                                                     <span className="flex-1 mr-2 text-gray-700">{opt}</span>
                                                     <div className="flex gap-1">
-                                                        <button onClick={() => { setEditingText(opt); setEditText(opt); }} className="text-blue-400 hover:text-blue-600"><Pencil className="w-3 h-3"/></button>
-                                                        <button onClick={() => { if(confirm("Delete this shared comment?")) onDeleteComment(activeLevel, opt, currentDisplaySkill); }} className="text-red-400 hover:text-red-600"><Trash2 className="w-3 h-3"/></button>
+                                                        <button onClick={() => { setEditingText(opt); setEditText(opt); }} className="text-blue-500 hover:bg-blue-50 p-1 rounded"><Pencil className="w-4 h-4"/></button>
+                                                        <button onClick={() => { if(confirm("Delete this shared comment?")) onDeleteComment(activeLevel, opt, currentDisplaySkill); }} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 className="w-4 h-4"/></button>
                                                     </div>
                                                 </>
                                             )}
@@ -487,9 +478,9 @@
                              )}
 
                              {!isManaging && (
-                                <div className="relative">
+                                <div className="flex gap-2 items-center">
                                     <select 
-                                        className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:ring-2 focus:ring-school-lightBlue outline-none"
+                                        className="flex-1 p-2 border border-blue-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-school-lightBlue outline-none cursor-pointer"
                                         onChange={(e) => {
                                             const newVal = e.target.value;
                                             onChange(currentValue ? currentValue + " " + newVal : newVal);
@@ -500,13 +491,16 @@
                                         {activeOptions.length === 0 && <option disabled>No comments available</option>}
                                         {activeOptions.map((opt, idx) => <option key={idx} value={opt}>{opt}</option>)}
                                     </select>
+                                    
+                                    {currentValue && (
+                                        <button onClick={() => onChange("")} className="px-3 py-2 bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-200 transition whitespace-nowrap">
+                                            Clear {category.label}
+                                        </button>
+                                    )}
                                 </div>
                              )}
                         </div>
                     )}
-                    
-                    <textarea rows={3} value={currentValue} readOnly={true} className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-gray-50 cursor-not-allowed" placeholder="Selected comments appear here..."></textarea>
-                    <div className="flex justify-end mt-1"><button onClick={() => onChange("")} className="text-xs text-red-400 hover:text-red-600 font-medium">Clear Text</button></div>
                 </div>
             );
         };
@@ -516,83 +510,113 @@
             onUpdateStudent, onAddCustomComment, onEditComment, onDeleteComment, 
             onShareGlobal, onSharePeriod, onDeleteAllComments, reportPeriod, onAddSkill, skillTabs, onDeleteSkill, subjectSkills
         }) => {
+            const [activeTabId, setActiveTabId] = useState(categories[0]?.id);
             const [activeSkills, setActiveSkills] = useState({});
 
+            useEffect(() => {
+                setActiveTabId(categories[0]?.id);
+            }, [student, categories]);
+
+            const activeCategory = categories.find(c => c.id === activeTabId) || categories[0];
+            const isHPLOrLang = activeCategory.id === 'HPL' || activeCategory.id === 'Language';
+            const isSkillCategory = activeCategory.id === 'Assessment' || activeCategory.id === 'Improvement';
+            const currentSkillTabs = isSkillCategory ? (subjectSkills[activeCategory.id] || ["General"]) : ["General"];
+            const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
+            const fullReportPreview = categories.map(c => classData[student]?.[c.id]?.trim()).filter(Boolean).join(" ");
+
             return (
-                <div className="space-y-8 animate-in">
-                    <div className="bg-school-blue text-white p-6 rounded-xl shadow-md mb-8 flex justify-between items-center border-l-8 border-school-lightBlue">
+                <div className="space-y-6 animate-in">
+                    <div className="bg-school-blue text-white p-6 rounded-xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center border-l-8 border-school-lightBlue gap-4">
                         <div>
-                            <span className="text-school-lightBlue font-bold bg-white px-3 py-1 rounded-full text-xs uppercase tracking-wide mr-3">
+                            <span className="text-school-lightBlue font-bold bg-white px-3 py-1 rounded-full text-xs uppercase tracking-wide mr-3 inline-block mb-2">
                                 Student {studentIndex + 1} of {totalStudents}
                             </span>
-                            <h2 className="text-3xl font-bold inline-block align-middle mt-2">{student}</h2>
+                            <h2 className="text-3xl font-bold align-middle">{student}</h2>
                         </div>
                     </div>
 
-                    {categories.map((category) => {
-                        const isHPLOrLang = category.id === 'HPL' || category.id === 'Language';
-                        const isSkillCategory = category.id === 'Assessment' || category.id === 'Improvement';
-                        const currentSkillTabs = isSkillCategory ? (subjectSkills[category.id] || ["General"]) : ["General"];
-                        const levels = (category.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">1. Select a category</h3>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                            {categories.map(cat => {
+                                const hasData = classData[student]?.[cat.id]?.trim().length > 0;
+                                const isActive = activeTabId === cat.id;
+                                return (
+                                    <button 
+                                        key={cat.id} 
+                                        onClick={() => setActiveTabId(cat.id)}
+                                        className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${isActive ? 'bg-school-lightBlue text-white shadow-md ring-2 ring-school-lightBlue ring-offset-2' : (hasData ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}`}
+                                    >
+                                        {cat.label}
+                                        {hasData && <CheckCircle className="w-4 h-4" />}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
 
-                        return (
-                            <div key={category.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
-                                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-4">
-                                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                        <FileText className="w-5 h-5 text-school-lightBlue" /> {category.label}
-                                    </h3>
-                                    
-                                    <div className="flex gap-2">
-                                        {/* DELETE ALL BUTTON */}
-                                        {!isHPLOrLang && (
-                                            <button onClick={() => onDeleteAllComments(category.id)} className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 text-xs font-bold rounded border border-red-200 hover:bg-red-100 transition">
-                                                <Trash2 className="w-3 h-3"/> Clear Bank
-                                            </button>
-                                        )}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-4">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-school-lightBlue" /> Editing: {activeCategory.label}
+                            </h3>
+                            
+                            <div className="flex gap-2">
+                                {!isHPLOrLang && (
+                                    <button onClick={() => onDeleteAllComments(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-red-600 text-xs font-bold rounded border border-gray-200 hover:bg-red-50 hover:border-red-200 transition shadow-sm">
+                                        <Trash2 className="w-3 h-3"/> Clear Bank
+                                    </button>
+                                )}
 
-                                        {/* SHARE BUTTONS */}
-                                        {isHPLOrLang && (
-                                            <button onClick={() => onShareGlobal(category.id)} className="flex items-center gap-1 px-3 py-1.5 bg-purple-50 text-purple-700 text-xs font-bold rounded border border-purple-200 hover:bg-purple-100 transition">
-                                                <Globe className="w-3 h-3"/> Update All
-                                            </button>
-                                        )}
+                                {isHPLOrLang && (
+                                    <button onClick={() => onShareGlobal(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-purple-700 text-xs font-bold rounded border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition shadow-sm">
+                                        <Globe className="w-3 h-3"/> Update All
+                                    </button>
+                                )}
 
-                                        {!isHPLOrLang && reportPeriod === "Progress 2" && (
-                                            <button onClick={() => onSharePeriod(category.id, "Progress 3")} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold rounded border border-indigo-200 hover:bg-indigo-100 transition">
-                                                <Share className="w-3 h-3"/> Share P2 ➔ P3
-                                            </button>
-                                        )}
+                                {!isHPLOrLang && reportPeriod === "Progress 2" && (
+                                    <button onClick={() => onSharePeriod(activeCategory.id, "Progress 3")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
+                                        <Share className="w-3 h-3"/> Share P2 ➔ P3
+                                    </button>
+                                )}
 
-                                        {!isHPLOrLang && reportPeriod === "Progress 3" && (
-                                            <button onClick={() => onSharePeriod(category.id, "Progress 2")} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold rounded border border-indigo-200 hover:bg-indigo-100 transition">
-                                                <Share className="w-3 h-3"/> Share P3 ➔ P2
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                
-                                <div className="p-4">
-                                    <CommentCategory 
-                                        category={category} 
-                                        optionsMap={optionsMapGenerator(category.id)} 
-                                        currentValue={classData[student]?.[category.id] || ""} 
-                                        onChange={(val) => onUpdateStudent(student, category.id, val)} 
-                                        onAddComment={(level, text, skill) => onAddCustomComment(category.id, level, text, skill)} 
-                                        onEditComment={(level, oldText, newText, skill) => onEditComment(category.id, level, oldText, newText, skill)}
-                                        onDeleteComment={(level, text, skill) => onDeleteComment(category.id, level, text, skill)}
-                                        levels={levels}
-                                        onAddSkill={(skill) => onAddSkill(category.id, skill)}
-                                        onDeleteSkill={(skill) => onDeleteSkill(category.id, skill)}
-                                        skillTabs={currentSkillTabs}
-                                        activeSkill={getSkill(category.id)}
-                                        onSwitchSkill={(skill) => setActiveSkills(prev => ({...prev, [category.id]: skill}))}
-                                    />
-                                </div>
+                                {!isHPLOrLang && reportPeriod === "Progress 3" && (
+                                    <button onClick={() => onSharePeriod(activeCategory.id, "Progress 2")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
+                                        <Share className="w-3 h-3"/> Share P3 ➔ P2
+                                    </button>
+                                )}
                             </div>
-                        );
-                    })}
+                        </div>
+                        
+                        <div className="p-6">
+                            <CommentCategory 
+                                category={activeCategory} 
+                                optionsMap={optionsMapGenerator(activeCategory.id)} 
+                                currentValue={classData[student]?.[activeCategory.id] || ""} 
+                                onChange={(val) => onUpdateStudent(student, activeCategory.id, val)} 
+                                onAddComment={(level, text, skill) => onAddCustomComment(activeCategory.id, level, text, skill)} 
+                                onEditComment={(level, oldText, newText, skill) => onEditComment(activeCategory.id, level, oldText, newText, skill)}
+                                onDeleteComment={(level, text, skill) => onDeleteComment(activeCategory.id, level, text, skill)}
+                                levels={levels}
+                                onAddSkill={(skill) => onAddSkill(activeCategory.id, skill)}
+                                onDeleteSkill={(skill) => onDeleteSkill(activeCategory.id, skill)}
+                                skillTabs={currentSkillTabs}
+                                activeSkill={getSkill(activeCategory.id)}
+                                onSwitchSkill={(skill) => setActiveSkills(prev => ({...prev, [activeCategory.id]: skill}))}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-blue-50 border border-school-lightBlue/30 rounded-xl p-5 shadow-inner mt-4">
+                        <h3 className="text-xs font-bold text-school-blue uppercase tracking-wider mb-3 flex justify-between">
+                            <span>Final Report Preview for {student}</span>
+                        </h3>
+                        <div className="bg-white p-4 rounded-lg border border-blue-100 text-gray-800 whitespace-pre-wrap min-h-[100px] text-sm leading-relaxed shadow-sm">
+                            {fullReportPreview || <span className="text-gray-400 italic">Comments will appear here as you select them...</span>}
+                        </div>
+                    </div>
                 </div>
             );
         };
@@ -624,15 +648,19 @@
             );
         };
 
-        const ActionPanel = ({ onBack, onNext, onReturnStart, isLastStep }) => (
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-50">
+        const ActionPanel = ({ onBack, onNext, onReturnStart, isLastStep, disableNext }) => (
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
                 <div className="max-w-5xl mx-auto flex justify-between gap-4">
                     <div className="flex gap-2">
-                        <button onClick={onReturnStart} className="flex items-center gap-2 px-4 py-3 rounded-lg font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors text-sm"><RotateCcw className="w-4 h-4" /> Return to Start</button>
+                        <button onClick={onReturnStart} className="flex items-center gap-2 px-4 py-3 rounded-lg font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors text-sm"><RotateCcw className="w-4 h-4" /> Start Over</button>
                         <button onClick={onBack} className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition-colors"><ArrowLeft className="w-5 h-5" /> Back</button>
                     </div>
-                    <button onClick={onNext} className={`flex items-center gap-2 px-8 py-3 rounded-lg font-bold text-white shadow-md ${isLastStep ? 'bg-green-600 hover:bg-green-700' : 'bg-school-lightBlue hover:bg-school-blue'}`}>
-                        {isLastStep ? <><CheckCircle className="w-5 h-5" /> Finish & Generate</> : <><ArrowRight className="w-5 h-5" /> Next Student</>}
+                    <button 
+                        onClick={onNext} 
+                        disabled={disableNext}
+                        className={`flex items-center gap-2 px-8 py-3 rounded-lg font-bold text-white shadow-md transition-all ${disableNext ? 'bg-gray-400 cursor-not-allowed' : (isLastStep ? 'bg-green-600 hover:bg-green-700' : 'bg-school-lightBlue hover:bg-school-blue')}`}
+                    >
+                        {disableNext ? <><X className="w-5 h-5"/> Complete All Categories</> : (isLastStep ? <><CheckCircle className="w-5 h-5" /> Finish & Generate</> : <><ArrowRight className="w-5 h-5" /> Next Student</>)}
                     </button>
                 </div>
             </div>
@@ -647,7 +675,7 @@
             const [sharedLogo, setSharedLogo] = useState(null);
             const [subjectDepartments, setSubjectDepartments] = useState({});
             const [departments, setDepartments] = useState(["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"]);
-            const [subjectSkills, setSubjectSkills] = useState({}); // NEW: Track custom skills per subject
+            const [subjectSkills, setSubjectSkills] = useState({});
 
             const [subject, setSubject] = useState("");
             const [department, setDepartment] = useState("");
@@ -672,7 +700,6 @@
                         if(data.logo) setSharedLogo(data.logo);
                         setIsConnected(true);
                     } else {
-                        // FIX FOR EMPTY DB WIPE: Ensure we don't accidentally overwrite if network fails
                         SHARED_DOC_REF.get({ source: 'server' }).then(dbDoc => {
                             if (!dbDoc.exists) {
                                 SHARED_DOC_REF.set({
@@ -785,8 +812,8 @@
                 
                 if (!newBank[key]) newBank[key] = {};
                 if (!newBank[key][catId]) newBank[key][catId] = {};
-                if (!newBank[key][catId][level]) newBank[key][catId][level] = {}; // Level is now object
-                if (!newBank[key][catId][level][skill]) newBank[key][catId][level][skill] = []; // Skill array
+                if (!newBank[key][catId][level]) newBank[key][catId][level] = {};
+                if (!newBank[key][catId][level][skill]) newBank[key][catId][level][skill] = [];
 
                 if (!newBank[key][catId][level][skill].includes(text)) {
                     newBank[key][catId][level][skill].push(text);
@@ -966,10 +993,10 @@
                 let out = "";
                 students.forEach(s => {
                     out += `${s}\n`;
-                    activeCategories.forEach(c => {
-                        // No bullet point - Plain text output
-                        if (classData[s]?.[c.id]) out += `${classData[s][c.id].trim()}\n`;
-                    });
+                    let studentReport = activeCategories.map(c => classData[s]?.[c.id]?.trim()).filter(Boolean).join(" ");
+                    if (studentReport) {
+                        out += `${studentReport}\n`;
+                    }
                     out += `\n-----------------------------------\n\n`;
                 });
                 setFinalBatchPrompt(out);
@@ -978,6 +1005,11 @@
             const isSetup = students.length === 0;
             const isResultStep = !isSetup && currentStepIndex === students.length;
             const activeStudent = (!isSetup && !isResultStep) ? students[currentStepIndex] : null;
+            
+            const isCurrentStudentComplete = activeStudent ? activeCategories.every(c => {
+                const text = classData[activeStudent]?.[c.id];
+                return text && text.trim().length > 0;
+            }) : true;
 
             return (
                 <div className="min-h-screen bg-gray-50 pb-32">
@@ -1055,6 +1087,7 @@
                                 window.scrollTo(0,0);
                             }}
                             isLastStep={currentStepIndex === students.length - 1}
+                            disableNext={!isCurrentStudentComplete}
                         />
                     )}
                 </div>
