@@ -87,6 +87,7 @@
         const Filter = ({ className }) => <Icon className={className} path={<><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>} />;
         const Briefcase = ({ className }) => <Icon className={className} path={<><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></>} />;
         const FileText = ({ className }) => <Icon className={className} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></>} />;
+        const Copy = ({ className }) => <Icon className={className} path={<><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></>} />;
 
         const DEFAULT_COMMENT_BANK = {
             "IB History": {
@@ -192,7 +193,6 @@
                         return { id: `Mock${i + 1}`, label: label };
                     });
                 } else if (isSharedStyle) {
-                    // Update Order: Assessment, Optionals, Improvement
                     finalCategories.push({id: "Assessment", label: "Assessment"});
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "HPL"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
@@ -213,7 +213,6 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
-                    // Direct add without validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -513,6 +512,7 @@
         }) => {
             const [activeTabId, setActiveTabId] = useState(categories[0]?.id);
             const [activeSkills, setActiveSkills] = useState({});
+            const [copied, setCopied] = useState(false);
 
             useEffect(() => {
                 setActiveTabId(categories[0]?.id);
@@ -525,12 +525,19 @@
             const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
-            // ADDED BULLET POINTS HERE ONLY FOR THE PREVIEW
+            // Plain text joined by double line break so they paste clearly as separate paragraphs
             const fullReportPreview = categories
                 .map(c => classData[student]?.[c.id]?.trim())
                 .filter(Boolean)
-                .map(text => "• " + text)
-                .join("\n");
+                .join("\n\n");
+
+            const handleCopy = () => {
+                if (!fullReportPreview) return;
+                navigator.clipboard.writeText(fullReportPreview).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                });
+            };
 
             return (
                 <div className="space-y-6 animate-in">
@@ -616,9 +623,20 @@
                     </div>
 
                     <div className="bg-blue-50 border border-school-lightBlue/30 rounded-xl p-5 shadow-inner mt-4">
-                        <h3 className="text-xs font-bold text-school-blue uppercase tracking-wider mb-3 flex justify-between">
-                            <span>Final Report Preview for {student}</span>
-                        </h3>
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-xs font-bold text-school-blue uppercase tracking-wider">
+                                Final Report Preview for {student}
+                            </h3>
+                            {fullReportPreview && (
+                                <button 
+                                    onClick={handleCopy} 
+                                    className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded shadow-sm transition-colors border ${copied ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white text-school-lightBlue border-blue-200 hover:bg-blue-100'}`}
+                                >
+                                    {copied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                    {copied ? "Copied!" : "Copy Report"}
+                                </button>
+                            )}
+                        </div>
                         <div className="bg-white p-4 rounded-lg border border-blue-100 text-gray-800 whitespace-pre-wrap min-h-[100px] text-sm leading-relaxed shadow-sm">
                             {fullReportPreview || <span className="text-gray-400 italic">Comments will appear here as you select them...</span>}
                         </div>
@@ -1001,10 +1019,10 @@
                 students.forEach(s => {
                     out += `${s}\n`;
                     activeCategories.forEach(c => {
-                        // No bullet point in final generation, just pure text
-                        if (classData[s]?.[c.id]) out += `${classData[s][c.id].trim()}\n`;
+                        // Double newline for hard paragraph break in final document
+                        if (classData[s]?.[c.id]) out += `${classData[s][c.id].trim()}\n\n`;
                     });
-                    out += `\n-----------------------------------\n\n`;
+                    out += `-----------------------------------\n\n`;
                 });
                 setFinalBatchPrompt(out);
             };
