@@ -116,41 +116,35 @@
             const [selected, setSelected] = useState([]);
             const [selectedDept, setSelectedDept] = useState("");
             
-            // Only allow sharing with valid active subjects
-            const availableSubjects = allSubjects.filter(s => s !== currentSubject);
+            const availableSubjects = (allSubjects || []).filter(s => s !== currentSubject);
             
-            // Group available subjects by department
             const subjectsByDept = {};
             availableSubjects.forEach(s => {
                 let dept = subjectDepartments[s] || "Other";
-                if (!departments.includes(dept)) dept = "Other"; 
+                if (!(departments || []).includes(dept)) dept = "Other"; 
                 if (!subjectsByDept[dept]) subjectsByDept[dept] = [];
                 subjectsByDept[dept].push(s);
             });
 
-            // Show ALL active departments, even if empty
-            const validDepartments = [...departments].sort();
+            const validDepartments = [...(departments || [])].sort();
 
-            // Default to expanding the current subject's department ONCE when opened
             useEffect(() => {
                 const currentDept = subjectDepartments[currentSubject] || "Other";
-                if (departments.includes(currentDept)) {
+                if (validDepartments.includes(currentDept)) {
                     setSelectedDept(currentDept);
-                } else if (departments.length > 0) {
-                    setSelectedDept(departments[0]);
+                } else if (validDepartments.length > 0) {
+                    setSelectedDept(validDepartments[0]);
                 }
                 // eslint-disable-next-line react-hooks/exhaustive-deps
-            }, [currentSubject]); // Only fire once when currentSubject loads
+            }, []); 
 
             const displayedSubjects = selectedDept ? (subjectsByDept[selectedDept] || []) : [];
             const isAllDisplayedSelected = displayedSubjects.length > 0 && displayedSubjects.every(s => selected.includes(s));
 
             const toggleDeptSelection = () => {
                 if (isAllDisplayedSelected) {
-                    // Deselect all in this specific dept view
                     setSelected(selected.filter(s => !displayedSubjects.includes(s)));
                 } else {
-                    // Select all in this specific dept view
                     const newSelected = [...selected];
                     displayedSubjects.forEach(s => {
                         if (!newSelected.includes(s)) newSelected.push(s);
@@ -252,7 +246,7 @@
                     const reader = new FileReader();
                     reader.onloadend = () => {
                         const result = reader.result;
-                        onLogoUpdate(result); // Sends to Shared DB
+                        onLogoUpdate(result); 
                     };
                     reader.readAsDataURL(file);
                 }
@@ -260,7 +254,7 @@
 
             return (
                 <div className="bg-school-blue text-white pt-8 pb-16 px-6 shadow-md border-b-4 border-school-lightBlue">
-                  <div className="max-w-5xl mx-auto flex items-start justify-between gap-4">
+                  <div className="max-w-[96%] mx-auto flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
                         <div 
                             className="bg-white p-2 rounded-lg shadow-sm overflow-hidden relative group cursor-pointer hover:ring-2 ring-school-lightBlue transition" 
@@ -306,7 +300,6 @@
                 "Homework": false
             });
 
-            // Protection against double click on the prompt button
             const isPrompting = useRef(false);
 
             useEffect(() => {
@@ -330,7 +323,6 @@
                         return { id: `Mock${i + 1}`, label: label };
                     });
                 } else if (isSharedStyle) {
-                    // Update Order: Assessment, Optionals, Improvement
                     finalCategories.push({id: "Assessment", label: "Assessment"});
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "Approaches to Learning"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
@@ -351,8 +343,14 @@
 
             const handleSaveSubjectLocal = (e) => {
                 e.preventDefault();
-                if (newSubjectName.trim()) {
-                    onAddSubject(newSubjectName.trim(), newSubjectType, department);
+                const name = newSubjectName.trim();
+                if (name) {
+                    const isDuplicate = (subjectOptions || []).some(s => s && s.toLowerCase() === name.toLowerCase());
+                    if (isDuplicate) {
+                        alert(`The subject name "${name}" is already being used.\n\nTo ensure your comments are kept separate, please add the department or year group to the name.\n\nExample: "${name} (${department})"`);
+                        return;
+                    }
+                    onAddSubject(name, newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
                 }
@@ -368,7 +366,7 @@
 
                 const name = prompt("Enter name for new department:");
                 if (name && name.trim()) {
-                    if (departments.includes(name.trim())) {
+                    if ((departments || []).some(d => d && d.toLowerCase() === name.trim().toLowerCase())) {
                         alert("Department already exists.");
                         return;
                     }
@@ -381,7 +379,8 @@
             
             const hasSelectedOptional = Object.values(selectedOptionals).some(v => v);
 
-            const filteredSubjects = Array.from(new Set(subjectOptions.filter(s => {
+            const filteredSubjects = Array.from(new Set((subjectOptions || []).filter(s => {
+                if (!s) return false;
                 const dept = subjectDepartments[s] || "Other";
                 return dept === department;
             })));
@@ -401,7 +400,7 @@
                                     className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg cursor-pointer"
                                 >
                                     <option value="">-- Choose Department --</option>
-                                    {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                                    {(departments || []).map(d => <option key={d} value={d}>{d}</option>)}
                                 </select>
                                 <button type="button" onClick={handleAddDeptClick} className="p-3 bg-school-lightBlue text-white rounded-lg hover:bg-school-blue transition-colors shadow-sm" title="Add new department"><PlusCircle className="w-5 h-5" /></button>
                                 {department && <button type="button" onClick={(e) => { e.preventDefault(); onDeleteDepartment(department); }} className="p-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors border border-red-200" title="Delete this department"><Trash2 className="w-5 h-5" /></button>}
@@ -502,7 +501,9 @@
             onAddComment, onEditComment, onDeleteComment, levels,
             onAddSkill, onSwitchSkill, activeSkill, skillTabs, onDeleteSkill
         }) => {
-            const [activeLevel, setActiveLevel] = useState(levels.length === 1 ? levels[0] : null);
+            if (!category) return null; // FATAL ERROR SAFETY GUARD
+
+            const [activeLevel, setActiveLevel] = useState(levels?.length === 1 ? levels[0] : null);
             const [isAdding, setIsAdding] = useState(false);
             const [isManaging, setIsManaging] = useState(false);
             const [newComment, setNewComment] = useState("");
@@ -510,12 +511,12 @@
             const [editText, setEditText] = useState("");
 
             useEffect(() => {
-                if (levels.length === 1) {
+                if (levels?.length === 1) {
                     setActiveLevel(levels[0]);
-                } else if (!levels.includes(activeLevel)) {
+                } else if (!levels?.includes(activeLevel)) {
                     setActiveLevel(null);
                 }
-            }, [levels, category.id]);
+            }, [levels, category?.id]);
 
             const supportsSkills = category.id !== "Homework";
             const currentDisplaySkill = supportsSkills ? activeSkill : "General";
@@ -553,13 +554,13 @@
                         <div className="mb-4 border-b border-gray-200 pb-2">
                             <div className="flex flex-wrap gap-2 items-center">
                                 <span className="text-xs font-bold text-gray-400 uppercase mr-2">Tabs:</span>
-                                {skillTabs.map(skill => (
+                                {(skillTabs || []).map(skill => (
                                     <div key={skill} className="relative group">
                                         <button 
                                             type="button"
                                             onClick={() => { 
                                                 onSwitchSkill(skill); 
-                                                setActiveLevel(levels.length === 1 ? levels[0] : null);
+                                                setActiveLevel(levels?.length === 1 ? levels[0] : null);
                                                 setIsAdding(false);
                                                 setIsManaging(false);
                                             }} 
@@ -586,10 +587,10 @@
                         </div>
                     )}
 
-                    {levels.length > 1 && (
+                    {(levels || []).length > 1 && (
                         <div className="mb-4">
                             <div className="flex flex-wrap gap-2">
-                                {levels.map((lvl) => (
+                                {(levels || []).map((lvl) => (
                                     <button type="button" key={lvl} onClick={() => { setActiveLevel(lvl); setIsAdding(false); setIsManaging(false); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${activeLevel === lvl ? 'bg-school-lightBlue text-white border-school-lightBlue shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
                                         {lvl}
                                     </button>
@@ -603,7 +604,7 @@
                              <div className="flex justify-between items-center border-b border-blue-200 pb-2">
                                 <span className="text-xs font-bold text-school-blue uppercase">
                                     {supportsSkills && currentDisplaySkill !== 'General' ? `${currentDisplaySkill} ` : ''}
-                                    {levels.length > 1 ? `${activeLevel} Comments` : 'Comments'}
+                                    {(levels || []).length > 1 ? `${activeLevel} Comments` : 'Comments'}
                                 </span>
                                 <div className="flex gap-2">
                                     <button type="button" onClick={() => { setIsManaging(!isManaging); setIsAdding(false); }} className={`text-xs font-bold flex items-center gap-1 ${isManaging ? 'text-school-blue' : 'text-gray-500 hover:text-gray-700'}`} title="Manage Comments"><Settings className="w-3 h-3"/> Manage</button>
@@ -644,9 +645,9 @@
                              )}
 
                              {!isManaging && (
-                                <div className="flex gap-2 items-center">
+                                <div className="flex flex-col sm:flex-row gap-2 sm:items-center w-full">
                                     <select 
-                                        className="flex-1 p-2 border border-blue-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-school-lightBlue outline-none cursor-pointer"
+                                        className="flex-1 w-full sm:w-0 p-2 border border-blue-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-school-lightBlue outline-none cursor-pointer text-ellipsis"
                                         onChange={(e) => {
                                             const newVal = e.target.value;
                                             onChange(currentValue ? currentValue + " " + newVal : newVal, true);
@@ -685,26 +686,38 @@
             onUpdateStudent, onAddCustomComment, onEditComment, onDeleteComment, 
             onOpenShareModal, onSharePeriod, onDeleteAllComments, reportPeriod, onAddSkill, skillTabs, onDeleteSkill, subjectSkills
         }) => {
-            const [activeTabId, setActiveTabId] = useState(categories[0]?.id);
+            
+            // FATAL ERROR SAFETY GUARD: Prevents blank screen on load
+            if (!categories || categories.length === 0) return null;
+            
+            const [activeTabId, setActiveTabId] = useState(categories[0]?.id || "");
             const [activeSkills, setActiveSkills] = useState({});
             const [copied, setCopied] = useState(false);
             const [actionHistory, setActionHistory] = useState([]);
 
             useEffect(() => {
-                setActiveTabId(categories[0]?.id);
+                if(categories && categories.length > 0) {
+                    setActiveTabId(categories[0].id);
+                }
                 setActionHistory([]); 
             }, [student, categories]);
 
-            const activeCategory = categories.find(c => c.id === activeTabId) || categories[0];
-            const isSubjectShareable = ['HPL', 'Language', 'Homework'].includes(activeCategory.id);
-            const isPeriodShareable = !['HPL', 'Language'].includes(activeCategory.id); 
-            const isSkillCategory = activeCategory.id !== 'Homework';
-            const currentSkillTabs = isSkillCategory ? (subjectSkills[activeCategory.id] || ["General"]) : ["General"];
-            const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
+            const currentActiveCat = categories.find(c => c.id === activeTabId) || categories[0];
+            if (!currentActiveCat) return null; // Final safety check
+
+            const isSubjectShareable = ['HPL', 'Language', 'Homework'].includes(currentActiveCat.id);
+            const isPeriodShareable = !['HPL', 'Language'].includes(currentActiveCat.id); 
+            const isSkillCategory = currentActiveCat.id !== 'Homework';
+            
+            const currentSkillTabs = isSkillCategory ? ((subjectSkills && subjectSkills[currentActiveCat.id]) || ["General"]) : ["General"];
+            const levels = (currentActiveCat.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
-            const activeComments = categories
-                .map(c => classData[student]?.[c.id]?.trim())
+            const activeComments = (categories || [])
+                .map(c => {
+                    const textVal = classData[student]?.[c.id] || "";
+                    return textVal.trim();
+                })
                 .filter(Boolean);
 
             const handleCategoryUpdate = (catId, val, isDropdownOrClear) => {
@@ -746,8 +759,7 @@
                     <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">1. Select a category</h3>
                         <div className="flex flex-wrap gap-2 mb-2">
-                            {categories.map(cat => {
-                                // SAFE HAS DATA CHECK: Prevents blank screen crash
+                            {(categories || []).map(cat => {
                                 const textVal = classData[student]?.[cat.id] || "";
                                 const hasData = textVal.trim().length > 0;
                                 const isActive = activeTabId === cat.id;
@@ -769,28 +781,28 @@
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-4">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-school-lightBlue" /> Editing: {activeCategory.label}
+                                <FileText className="w-5 h-5 text-school-lightBlue" /> Editing: {currentActiveCat.label}
                             </h3>
                             
                             <div className="flex gap-2">
-                                <button type="button" onClick={() => onDeleteAllComments(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-red-600 text-xs font-bold rounded border border-gray-200 hover:bg-red-50 hover:border-red-200 transition shadow-sm" title={`Clear all ${activeCategory.label} comments for ${subject}`}>
+                                <button type="button" onClick={() => onDeleteAllComments(currentActiveCat.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-red-600 text-xs font-bold rounded border border-gray-200 hover:bg-red-50 hover:border-red-200 transition shadow-sm" title={`Clear all ${currentActiveCat.label} comments for ${subject}`}>
                                     <Trash2 className="w-3 h-3"/> Clear Bank
                                 </button>
 
                                 {isSubjectShareable && (
-                                    <button type="button" onClick={() => onOpenShareModal(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-purple-700 text-xs font-bold rounded border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition shadow-sm">
+                                    <button type="button" onClick={() => onOpenShareModal(currentActiveCat.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-purple-700 text-xs font-bold rounded border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition shadow-sm">
                                         <Globe className="w-3 h-3"/> Share w/ Subjects
                                     </button>
                                 )}
 
                                 {isPeriodShareable && reportPeriod === "Progress 2" && (
-                                    <button type="button" onClick={() => onSharePeriod(activeCategory.id, "Progress 3")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
+                                    <button type="button" onClick={() => onSharePeriod(currentActiveCat.id, "Progress 3")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
                                         <Share className="w-3 h-3"/> Share P2 ➔ P3
                                     </button>
                                 )}
 
                                 {isPeriodShareable && reportPeriod === "Progress 3" && (
-                                    <button type="button" onClick={() => onSharePeriod(activeCategory.id, "Progress 2")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
+                                    <button type="button" onClick={() => onSharePeriod(currentActiveCat.id, "Progress 2")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
                                         <Share className="w-3 h-3"/> Share P3 ➔ P2
                                     </button>
                                 )}
@@ -799,20 +811,20 @@
                         
                         <div className="p-6">
                             <CommentCategory 
-                                key={`${student}-${activeCategory.id}`}
-                                category={activeCategory} 
-                                optionsMap={optionsMapGenerator(activeCategory.id)} 
-                                currentValue={classData[student]?.[activeCategory.id] || ""} 
-                                onChange={(val, isDropdown) => handleCategoryUpdate(activeCategory.id, val, isDropdown)} 
-                                onAddComment={(level, text, skill) => onAddCustomComment(activeCategory.id, level, text, skill)} 
-                                onEditComment={(level, oldText, newText, skill) => onEditComment(activeCategory.id, level, oldText, newText, skill)}
-                                onDeleteComment={(level, text, skill) => onDeleteComment(activeCategory.id, level, text, skill)}
+                                key={`${student}-${currentActiveCat.id}`}
+                                category={currentActiveCat} 
+                                optionsMap={optionsMapGenerator(currentActiveCat.id)} 
+                                currentValue={classData[student]?.[currentActiveCat.id] || ""} 
+                                onChange={(val, isDropdown) => handleCategoryUpdate(currentActiveCat.id, val, isDropdown)} 
+                                onAddComment={(level, text, skill) => onAddCustomComment(currentActiveCat.id, level, text, skill)} 
+                                onEditComment={(level, oldText, newText, skill) => onEditComment(currentActiveCat.id, level, oldText, newText, skill)}
+                                onDeleteComment={(level, text, skill) => onDeleteComment(currentActiveCat.id, level, text, skill)}
                                 levels={levels}
-                                onAddSkill={(skill) => onAddSkill(activeCategory.id, skill)}
-                                onDeleteSkill={(skill) => onDeleteSkill(activeCategory.id, skill)}
+                                onAddSkill={(skill) => onAddSkill(currentActiveCat.id, skill)}
+                                onDeleteSkill={(skill) => onDeleteSkill(currentActiveCat.id, skill)}
                                 skillTabs={currentSkillTabs}
-                                activeSkill={getSkill(activeCategory.id)}
-                                onSwitchSkill={(skill) => setActiveSkills(prev => ({...prev, [activeCategory.id]: skill}))}
+                                activeSkill={getSkill(currentActiveCat.id)}
+                                onSwitchSkill={(skill) => setActiveSkills(prev => ({...prev, [currentActiveCat.id]: skill}))}
                             />
                         </div>
                     </div>
@@ -890,7 +902,7 @@
 
         const ActionPanel = ({ onBack, onNext, onReturnStart, isLastStep, disableNext }) => (
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
-                <div className="max-w-5xl mx-auto flex justify-between gap-4">
+                <div className="max-w-[96%] mx-auto flex justify-between gap-4">
                     <div className="flex gap-2">
                         <button type="button" onClick={onReturnStart} className="flex items-center gap-2 px-4 py-3 rounded-lg font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors text-sm"><RotateCcw className="w-4 h-4" /> Start Over</button>
                         <button type="button" onClick={onBack} className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition-colors"><ArrowLeft className="w-5 h-5" /> Back</button>
@@ -976,18 +988,18 @@
             };
 
             const handleAddSubject = (newSubject, type, dept) => {
-                let updatedSubjects = [...customSubjects];
+                let updatedSubjects = [...(customSubjects || [])];
                 if (!updatedSubjects.includes(newSubject)) {
                     updatedSubjects.push(newSubject);
                 }
 
                 // If it was previously deleted, remove it from the deleted list so it comes back clean
-                let updatedDeleted = deletedSubjects.filter(s => s !== newSubject);
+                let updatedDeleted = (deletedSubjects || []).filter(s => s !== newSubject);
 
-                const updatedTypes = { ...subjectTypes, [newSubject]: type };
-                const updatedDepts = { ...subjectDepartments, [newSubject]: dept };
+                const updatedTypes = { ...(subjectTypes || {}), [newSubject]: type };
+                const updatedDepts = { ...(subjectDepartments || {}), [newSubject]: dept };
 
-                let newBank = { ...customBank };
+                let newBank = JSON.parse(JSON.stringify(customBank || {}));
                 const sharedKey = `${newSubject}::SHARED`;
                 if (!newBank[sharedKey]) {
                      newBank[sharedKey] = {
@@ -1019,17 +1031,17 @@
             const handleDeleteSubject = () => {
                 if (!subject || subject === "__NEW__") return;
                 if (confirm(`⚠️ Are you sure you want to PERMANENTLY delete the subject "${subject}"?`)) {
-                    const updatedSubjects = customSubjects.filter(s => s !== subject);
+                    const updatedSubjects = (customSubjects || []).filter(s => s !== subject);
                     
-                    const newDeleted = [...deletedSubjects];
+                    const newDeleted = [...(deletedSubjects || [])];
                     if (!newDeleted.includes(subject)) newDeleted.push(subject);
 
-                    const updatedTypes = { ...subjectTypes }; delete updatedTypes[subject];
-                    const updatedMockTitles = { ...mockTitles }; delete updatedMockTitles[subject];
-                    const updatedDepts = { ...subjectDepartments }; delete updatedDepts[subject];
-                    const updatedSkills = { ...subjectSkills }; delete updatedSkills[subject];
+                    const updatedTypes = { ...(subjectTypes || {}) }; delete updatedTypes[subject];
+                    const updatedMockTitles = { ...(mockTitles || {}) }; delete updatedMockTitles[subject];
+                    const updatedDepts = { ...(subjectDepartments || {}) }; delete updatedDepts[subject];
+                    const updatedSkills = { ...(subjectSkills || {}) }; delete updatedSkills[subject];
                     
-                    const updatedBank = { ...customBank };
+                    const updatedBank = JSON.parse(JSON.stringify(customBank || {}));
                     Object.keys(updatedBank).forEach(key => {
                         if (key.startsWith(`${subject}::`)) {
                             delete updatedBank[key];
@@ -1059,8 +1071,8 @@
             };
             
             const handleAddDepartment = (newDept) => {
-                if (!departments.includes(newDept)) {
-                    const newDepts = [...departments, newDept];
+                if (!(departments || []).includes(newDept)) {
+                    const newDepts = [...(departments || []), newDept];
                     // Optimistic UI updates
                     setDepartments(newDepts);
                     setDepartment(newDept);
@@ -1071,18 +1083,18 @@
 
             const handleDeleteDepartment = (deptToDelete) => {
                  if (confirm(`⚠️ DANGER: Delete department "${deptToDelete}"?\n\nThis will PERMANENTLY DELETE ALL SUBJECTS and comments inside this department.`)) {
-                    const newDepts = departments.filter(d => d !== deptToDelete);
+                    const newDepts = (departments || []).filter(d => d !== deptToDelete);
                     
-                    let updatedSubjects = [...customSubjects];
-                    let newDeleted = [...deletedSubjects];
-                    let updatedTypes = { ...subjectTypes };
-                    let updatedMockTitles = { ...mockTitles };
-                    let updatedDepts = { ...subjectDepartments };
-                    let updatedSkills = { ...subjectSkills };
-                    let updatedBank = { ...customBank };
+                    let updatedSubjects = [...(customSubjects || [])];
+                    let newDeleted = [...(deletedSubjects || [])];
+                    let updatedTypes = { ...(subjectTypes || {}) };
+                    let updatedMockTitles = { ...(mockTitles || {}) };
+                    let updatedDepts = { ...(subjectDepartments || {}) };
+                    let updatedSkills = { ...(subjectSkills || {}) };
+                    let updatedBank = JSON.parse(JSON.stringify(customBank || {}));
 
                     // Get all subjects mapped to this department, including default ones
-                    const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]));
+                    const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...(customSubjects || [])]));
                     const subjectsInDept = allSubjectsList.filter(s => (subjectDepartments[s] || "Other") === deptToDelete);
 
                     subjectsInDept.forEach(subj => {
@@ -1127,18 +1139,12 @@
                  }
             };
 
-            const handleUpdateMockTitle = (idx, val) => {
-                const current = mockTitles[subject] || ["", "", "", "", ""];
-                current[idx] = val;
-                updateCloud('mockTitles', { ...mockTitles, [subject]: current });
-            };
-
             const getSourceKeyLogic = (cId, subj) => (cId === 'HPL' || cId === 'Language') ? `${subj}::SHARED` : `${subj}::${reportPeriod}`;
             const getBankKey = (catId) => getSourceKeyLogic(catId, subject);
 
             const handleAddCustomComment = (catId, level, text, skill = "General") => {
                 const key = getBankKey(catId);
-                const newBank = JSON.parse(JSON.stringify(customBank));
+                const newBank = JSON.parse(JSON.stringify(customBank || {}));
                 
                 if (!newBank[key]) newBank[key] = {};
                 if (!newBank[key][catId]) newBank[key][catId] = {};
@@ -1153,7 +1159,7 @@
 
             const handleEditComment = (catId, level, oldText, newText, skill = "General") => {
                 const key = getBankKey(catId);
-                const newBank = JSON.parse(JSON.stringify(customBank));
+                const newBank = JSON.parse(JSON.stringify(customBank || {}));
                 const comments = newBank[key]?.[catId]?.[level]?.[skill] || [];
                 const idx = comments.indexOf(oldText);
                 if (idx > -1) {
@@ -1164,7 +1170,7 @@
 
             const handleDeleteComment = (catId, level, text, skill = "General", isSkillDeletion = false) => {
                 const key = getBankKey(catId);
-                const newBank = JSON.parse(JSON.stringify(customBank));
+                const newBank = JSON.parse(JSON.stringify(customBank || {}));
 
                 if (isSkillDeletion) {
                     if (confirm(`Are you sure you want to delete the skill "${skill}" permanently?`)) {
@@ -1214,8 +1220,8 @@
                     return;
                 }
 
-                const newBank = JSON.parse(JSON.stringify(customBank));
-                const newSubjectSkills = JSON.parse(JSON.stringify(subjectSkills));
+                const newBank = JSON.parse(JSON.stringify(customBank || {}));
+                const newSubjectSkills = JSON.parse(JSON.stringify(subjectSkills || {}));
                 const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
                 const currentCatSkills = subjectSkills[subject]?.[catId] || ["General"];
 
@@ -1264,7 +1270,7 @@
 
                 if (!sourceData) return alert("No comments to share.");
 
-                const newBank = JSON.parse(JSON.stringify(customBank));
+                const newBank = JSON.parse(JSON.stringify(customBank || {}));
                 if (!newBank[targetKey]) newBank[targetKey] = {};
                 
                 // OVERWRITE LOGIC
@@ -1282,7 +1288,7 @@
                 if (!confirm(`⚠️ Are you sure you want to DELETE ALL comments for ${displayCat} in ${targetPeriod} for ${subject} ONLY?\n\nThis will NOT delete comments in other subjects.`)) return;
 
                 const key = isSharedCat ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
-                const newBank = JSON.parse(JSON.stringify(customBank));
+                const newBank = JSON.parse(JSON.stringify(customBank || {}));
 
                 if (newBank[key] && newBank[key][catId]) {
                     delete newBank[key][catId]; 
@@ -1340,7 +1346,7 @@
                 let out = "";
                 students.forEach((s, index) => {
                     out += `${s}\n`;
-                    const comments = activeCategories
+                    const comments = (activeCategories || [])
                         .map(c => {
                             const textVal = classData[s]?.[c.id] || "";
                             return textVal.trim();
@@ -1359,34 +1365,34 @@
                 setFinalBatchPrompt(out);
             };
 
-            const isSetup = students.length === 0;
+            const isSetup = (students || []).length === 0;
             const isResultStep = !isSetup && currentStepIndex === students.length;
             const activeStudent = (!isSetup && !isResultStep) ? students[currentStepIndex] : null;
             
-            const isCurrentStudentComplete = activeStudent ? activeCategories.every(c => {
+            const isCurrentStudentComplete = activeStudent ? (activeCategories || []).every(c => {
                 const textVal = classData[activeStudent]?.[c.id] || "";
                 return textVal.trim().length > 0;
             }) : true;
 
             // Compute valid active subjects (removes permanently deleted ones)
-            const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]))
-                .filter(s => !deletedSubjects.includes(s));
+            const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...(customSubjects || [])]))
+                .filter(s => !(deletedSubjects || []).includes(s));
 
             return (
                 <div className="min-h-screen bg-gray-50 pb-32">
                     <Header isConnected={isConnected} logo={sharedLogo} onLogoUpdate={(l) => updateCloud('logo', l)} />
-                    <main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
+                    <main className="max-w-[96%] mx-auto px-4 sm:px-6 -mt-8 relative z-10">
                         {isSetup && (
                             <ClassSetup
                                 subject={subject} setSubject={setSubject}
                                 subjectOptions={allSubjectsList}
                                 department={department} setDepartment={setDepartment}
-                                departments={departments}
-                                subjectDepartments={subjectDepartments}
+                                departments={departments || []}
+                                subjectDepartments={subjectDepartments || {}}
                                 onStartClass={handleStartClass}
                                 onAddSubject={handleAddSubject}
                                 reportPeriod={reportPeriod} setReportPeriod={setReportPeriod}
-                                subjectTypes={subjectTypes}
+                                subjectTypes={subjectTypes || {}}
                                 mockTitles={mockTitles[subject] || ["", "", "", "", ""]}
                                 onUpdateMockTitle={handleUpdateMockTitle}
                                 onDeleteSubject={handleDeleteSubject}
@@ -1402,8 +1408,8 @@
                                 student={activeStudent}
                                 studentIndex={currentStepIndex}
                                 totalStudents={students.length}
-                                categories={activeCategories}
-                                classData={classData}
+                                categories={activeCategories || []}
+                                classData={classData || {}}
                                 optionsMapGenerator={getOptionsMap}
                                 onUpdateStudent={handleUpdateStudent}
                                 onAddCustomComment={handleAddCustomComment}
@@ -1459,8 +1465,8 @@
                             catId={shareModalData.catId}
                             currentSubject={subject}
                             allSubjects={allSubjectsList}
-                            subjectDepartments={subjectDepartments}
-                            departments={departments}
+                            subjectDepartments={subjectDepartments || {}}
+                            departments={departments || []}
                             onClose={() => setShareModalData(null)}
                             onConfirm={(selected) => handleShareToSubjects(shareModalData.catId, selected)}
                         />
