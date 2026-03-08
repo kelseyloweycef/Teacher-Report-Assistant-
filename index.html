@@ -90,6 +90,8 @@
         const Briefcase = ({ className }) => <Icon className={className} path={<><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></>} />;
         const FileText = ({ className }) => <Icon className={className} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></>} />;
         const Copy = ({ className }) => <Icon className={className} path={<><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></>} />;
+        const ChevronDown = ({ className }) => <Icon className={className} path={<><polyline points="6 9 12 15 18 9"/></>} />;
+        const ChevronUp = ({ className }) => <Icon className={className} path={<><polyline points="18 15 12 9 6 15"/></>} />;
 
         const DEFAULT_COMMENT_BANK = {
             "IB History": {
@@ -138,7 +140,7 @@
                     setSelectedDept(departments[0]);
                 }
                 // eslint-disable-next-line react-hooks/exhaustive-deps
-            }, [currentSubject]); // Removed other dependencies to prevent reset loop
+            }, [currentSubject]); // Only fire once when currentSubject loads
 
             const displayedSubjects = selectedDept ? (subjectsByDept[selectedDept] || []) : [];
             const isAllDisplayedSelected = displayedSubjects.length > 0 && displayedSubjects.every(s => selected.includes(s));
@@ -304,6 +306,9 @@
                 "Homework": false
             });
 
+            // Protection against double click on the prompt button
+            const isPrompting = useRef(false);
+
             useEffect(() => {
                 setSelectedOptionals({ "HPL": false, "Language": false, "Homework": false });
             }, [subject]);
@@ -356,6 +361,11 @@
             const handleAddDeptClick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (isPrompting.current) return;
+                
+                isPrompting.current = true;
+                setTimeout(() => { isPrompting.current = false; }, 500);
+
                 const name = prompt("Enter name for new department:");
                 if (name && name.trim()) {
                     if (departments.includes(name.trim())) {
@@ -737,7 +747,9 @@
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">1. Select a category</h3>
                         <div className="flex flex-wrap gap-2 mb-2">
                             {categories.map(cat => {
-                                const hasData = classData[student]?.[cat.id]?.trim().length > 0;
+                                // SAFE HAS DATA CHECK: Prevents blank screen crash
+                                const textVal = classData[student]?.[cat.id] || "";
+                                const hasData = textVal.trim().length > 0;
                                 const isActive = activeTabId === cat.id;
                                 return (
                                     <button 
@@ -1115,10 +1127,6 @@
                  }
             };
 
-            const updateCloud = (key, value) => {
-                SHARED_DOC_REF.set({ [key]: value }, { merge: true }).catch(console.error);
-            };
-
             const handleUpdateMockTitle = (idx, val) => {
                 const current = mockTitles[subject] || ["", "", "", "", ""];
                 current[idx] = val;
@@ -1333,7 +1341,10 @@
                 students.forEach((s, index) => {
                     out += `${s}\n`;
                     const comments = activeCategories
-                        .map(c => classData[s]?.[c.id]?.trim())
+                        .map(c => {
+                            const textVal = classData[s]?.[c.id] || "";
+                            return textVal.trim();
+                        })
                         .filter(Boolean);
                         
                     if (comments.length > 0) {
@@ -1353,8 +1364,8 @@
             const activeStudent = (!isSetup && !isResultStep) ? students[currentStepIndex] : null;
             
             const isCurrentStudentComplete = activeStudent ? activeCategories.every(c => {
-                const text = classData[activeStudent]?.[c.id];
-                return text && text.trim().length > 0;
+                const textVal = classData[activeStudent]?.[c.id] || "";
+                return textVal.trim().length > 0;
             }) : true;
 
             // Compute valid active subjects (removes permanently deleted ones)
