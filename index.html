@@ -252,7 +252,7 @@
                     const reader = new FileReader();
                     reader.onloadend = () => {
                         const result = reader.result;
-                        onLogoUpdate(result); 
+                        onLogoUpdate(result); // Sends to Shared DB
                     };
                     reader.readAsDataURL(file);
                 }
@@ -713,8 +713,11 @@
             const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
-            const activeComments = categories
-                .map(c => classData[student]?.[c.id]?.trim())
+            const activeComments = (categories || [])
+                .map(c => {
+                    const textVal = classData[student]?.[c.id] || "";
+                    return textVal.trim();
+                })
                 .filter(Boolean);
 
             const handleCategoryUpdate = (catId, val, isDropdownOrClear) => {
