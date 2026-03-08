@@ -117,30 +117,30 @@
             const [selectedDept, setSelectedDept] = useState("");
             
             // Only allow sharing with valid active subjects
-            const availableSubjects = (allSubjects || []).filter(s => s !== currentSubject);
+            const availableSubjects = allSubjects.filter(s => s !== currentSubject);
             
             // Group available subjects by department
             const subjectsByDept = {};
             availableSubjects.forEach(s => {
                 let dept = subjectDepartments[s] || "Other";
-                if (!(departments || []).includes(dept)) dept = "Other"; 
+                if (!departments.includes(dept)) dept = "Other"; 
                 if (!subjectsByDept[dept]) subjectsByDept[dept] = [];
                 subjectsByDept[dept].push(s);
             });
 
             // Show ALL active departments, even if empty
-            const validDepartments = [...(departments || [])].sort();
+            const validDepartments = [...departments].sort();
 
             // Default to expanding the current subject's department ONCE when opened
             useEffect(() => {
                 const currentDept = subjectDepartments[currentSubject] || "Other";
-                if (validDepartments.includes(currentDept)) {
+                if (departments.includes(currentDept)) {
                     setSelectedDept(currentDept);
-                } else if (validDepartments.length > 0) {
-                    setSelectedDept(validDepartments[0]);
+                } else if (departments.length > 0) {
+                    setSelectedDept(departments[0]);
                 }
                 // eslint-disable-next-line react-hooks/exhaustive-deps
-            }, []); // Empty dependency array ensures it only sets defaults once on open
+            }, [currentSubject]); // Only fire once when currentSubject loads
 
             const displayedSubjects = selectedDept ? (subjectsByDept[selectedDept] || []) : [];
             const isAllDisplayedSelected = displayedSubjects.length > 0 && displayedSubjects.every(s => selected.includes(s));
@@ -330,6 +330,7 @@
                         return { id: `Mock${i + 1}`, label: label };
                     });
                 } else if (isSharedStyle) {
+                    // Update Order: Assessment, Optionals, Improvement
                     finalCategories.push({id: "Assessment", label: "Assessment"});
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "Approaches to Learning"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
@@ -352,8 +353,8 @@
                 e.preventDefault();
                 const name = newSubjectName.trim();
                 if (name) {
-                    // Force Unique Name logic to prevent cross-contamination
-                    const isDuplicate = (subjectOptions || []).some(s => s && s.toLowerCase() === name.toLowerCase());
+                    // Force Unique Name
+                    const isDuplicate = subjectOptions.some(s => s.toLowerCase() === name.toLowerCase());
                     if (isDuplicate) {
                         alert(`The subject name "${name}" is already being used.\n\nTo ensure your comments are kept separate, please add the department or year group to the name.\n\nExample: "${name} (${department})"`);
                         return;
@@ -374,7 +375,7 @@
 
                 const name = prompt("Enter name for new department:");
                 if (name && name.trim()) {
-                    if ((departments || []).some(d => d && d.toLowerCase() === name.trim().toLowerCase())) {
+                    if (departments.some(d => d.toLowerCase() === name.trim().toLowerCase())) {
                         alert("Department already exists.");
                         return;
                     }
@@ -387,8 +388,7 @@
             
             const hasSelectedOptional = Object.values(selectedOptionals).some(v => v);
 
-            const filteredSubjects = Array.from(new Set((subjectOptions || []).filter(s => {
-                if (!s) return false;
+            const filteredSubjects = Array.from(new Set(subjectOptions.filter(s => {
                 const dept = subjectDepartments[s] || "Other";
                 return dept === department;
             })));
@@ -408,7 +408,7 @@
                                     className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg cursor-pointer"
                                 >
                                     <option value="">-- Choose Department --</option>
-                                    {(departments || []).map(d => <option key={d} value={d}>{d}</option>)}
+                                    {departments.map(d => <option key={d} value={d}>{d}</option>)}
                                 </select>
                                 <button type="button" onClick={handleAddDeptClick} className="p-3 bg-school-lightBlue text-white rounded-lg hover:bg-school-blue transition-colors shadow-sm" title="Add new department"><PlusCircle className="w-5 h-5" /></button>
                                 {department && <button type="button" onClick={(e) => { e.preventDefault(); onDeleteDepartment(department); }} className="p-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors border border-red-200" title="Delete this department"><Trash2 className="w-5 h-5" /></button>}
@@ -542,7 +542,6 @@
                 }
             };
 
-            // SAFE EXTRACTION: prevents crash if optionsMap hasn't loaded a skill yet
             const activeOptions = (activeLevel && optionsMap && optionsMap[currentDisplaySkill] && optionsMap[currentDisplaySkill][activeLevel]) || [];
 
             const handleAddSkillPrompt = () => {
@@ -561,7 +560,7 @@
                         <div className="mb-4 border-b border-gray-200 pb-2">
                             <div className="flex flex-wrap gap-2 items-center">
                                 <span className="text-xs font-bold text-gray-400 uppercase mr-2">Tabs:</span>
-                                {(skillTabs || []).map(skill => (
+                                {skillTabs.map(skill => (
                                     <div key={skill} className="relative group">
                                         <button 
                                             type="button"
@@ -597,7 +596,7 @@
                     {levels.length > 1 && (
                         <div className="mb-4">
                             <div className="flex flex-wrap gap-2">
-                                {(levels || []).map((lvl) => (
+                                {levels.map((lvl) => (
                                     <button type="button" key={lvl} onClick={() => { setActiveLevel(lvl); setIsAdding(false); setIsManaging(false); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${activeLevel === lvl ? 'bg-school-lightBlue text-white border-school-lightBlue shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
                                         {lvl}
                                     </button>
@@ -707,8 +706,6 @@
             const isSubjectShareable = ['HPL', 'Language', 'Homework'].includes(activeCategory.id);
             const isPeriodShareable = !['HPL', 'Language'].includes(activeCategory.id); 
             const isSkillCategory = activeCategory.id !== 'Homework';
-            
-            // SAFE EXTRACTION
             const currentSkillTabs = isSkillCategory ? (subjectSkills[activeCategory.id] || ["General"]) : ["General"];
             const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
@@ -756,7 +753,7 @@
                     <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">1. Select a category</h3>
                         <div className="flex flex-wrap gap-2 mb-2">
-                            {(categories || []).map(cat => {
+                            {categories.map(cat => {
                                 const textVal = classData[student]?.[cat.id] || "";
                                 const hasData = textVal.trim().length > 0;
                                 const isActive = activeTabId === cat.id;
@@ -985,18 +982,18 @@
             };
 
             const handleAddSubject = (newSubject, type, dept) => {
-                let updatedSubjects = [...(customSubjects || [])];
+                let updatedSubjects = [...customSubjects];
                 if (!updatedSubjects.includes(newSubject)) {
                     updatedSubjects.push(newSubject);
                 }
 
                 // If it was previously deleted, remove it from the deleted list so it comes back clean
-                let updatedDeleted = (deletedSubjects || []).filter(s => s !== newSubject);
+                let updatedDeleted = deletedSubjects.filter(s => s !== newSubject);
 
-                const updatedTypes = { ...(subjectTypes || {}), [newSubject]: type };
-                const updatedDepts = { ...(subjectDepartments || {}), [newSubject]: dept };
+                const updatedTypes = { ...subjectTypes, [newSubject]: type };
+                const updatedDepts = { ...subjectDepartments, [newSubject]: dept };
 
-                let newBank = JSON.parse(JSON.stringify(customBank || {}));
+                let newBank = { ...customBank };
                 const sharedKey = `${newSubject}::SHARED`;
                 if (!newBank[sharedKey]) {
                      newBank[sharedKey] = {
@@ -1028,17 +1025,17 @@
             const handleDeleteSubject = () => {
                 if (!subject || subject === "__NEW__") return;
                 if (confirm(`⚠️ Are you sure you want to PERMANENTLY delete the subject "${subject}"?`)) {
-                    const updatedSubjects = (customSubjects || []).filter(s => s !== subject);
+                    const updatedSubjects = customSubjects.filter(s => s !== subject);
                     
-                    const newDeleted = [...(deletedSubjects || [])];
+                    const newDeleted = [...deletedSubjects];
                     if (!newDeleted.includes(subject)) newDeleted.push(subject);
 
-                    const updatedTypes = { ...(subjectTypes || {}) }; delete updatedTypes[subject];
-                    const updatedMockTitles = { ...(mockTitles || {}) }; delete updatedMockTitles[subject];
-                    const updatedDepts = { ...(subjectDepartments || {}) }; delete updatedDepts[subject];
-                    const updatedSkills = { ...(subjectSkills || {}) }; delete updatedSkills[subject];
+                    const updatedTypes = { ...subjectTypes }; delete updatedTypes[subject];
+                    const updatedMockTitles = { ...mockTitles }; delete updatedMockTitles[subject];
+                    const updatedDepts = { ...subjectDepartments }; delete updatedDepts[subject];
+                    const updatedSkills = { ...subjectSkills }; delete updatedSkills[subject];
                     
-                    const updatedBank = JSON.parse(JSON.stringify(customBank || {}));
+                    const updatedBank = { ...customBank };
                     Object.keys(updatedBank).forEach(key => {
                         if (key.startsWith(`${subject}::`)) {
                             delete updatedBank[key];
@@ -1068,8 +1065,8 @@
             };
             
             const handleAddDepartment = (newDept) => {
-                if (!(departments || []).includes(newDept)) {
-                    const newDepts = [...(departments || []), newDept];
+                if (!departments.includes(newDept)) {
+                    const newDepts = [...departments, newDept];
                     // Optimistic UI updates
                     setDepartments(newDepts);
                     setDepartment(newDept);
@@ -1080,18 +1077,18 @@
 
             const handleDeleteDepartment = (deptToDelete) => {
                  if (confirm(`⚠️ DANGER: Delete department "${deptToDelete}"?\n\nThis will PERMANENTLY DELETE ALL SUBJECTS and comments inside this department.`)) {
-                    const newDepts = (departments || []).filter(d => d !== deptToDelete);
+                    const newDepts = departments.filter(d => d !== deptToDelete);
                     
-                    let updatedSubjects = [...(customSubjects || [])];
-                    let newDeleted = [...(deletedSubjects || [])];
-                    let updatedTypes = { ...(subjectTypes || {}) };
-                    let updatedMockTitles = { ...(mockTitles || {}) };
-                    let updatedDepts = { ...(subjectDepartments || {}) };
-                    let updatedSkills = { ...(subjectSkills || {}) };
-                    let updatedBank = JSON.parse(JSON.stringify(customBank || {}));
+                    let updatedSubjects = [...customSubjects];
+                    let newDeleted = [...deletedSubjects];
+                    let updatedTypes = { ...subjectTypes };
+                    let updatedMockTitles = { ...mockTitles };
+                    let updatedDepts = { ...subjectDepartments };
+                    let updatedSkills = { ...subjectSkills };
+                    let updatedBank = { ...customBank };
 
                     // Get all subjects mapped to this department, including default ones
-                    const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...(customSubjects || [])]));
+                    const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]));
                     const subjectsInDept = allSubjectsList.filter(s => (subjectDepartments[s] || "Other") === deptToDelete);
 
                     subjectsInDept.forEach(subj => {
@@ -1136,12 +1133,22 @@
                  }
             };
 
+            const updateCloud = (key, value) => {
+                SHARED_DOC_REF.set({ [key]: value }, { merge: true }).catch(console.error);
+            };
+
+            const handleUpdateMockTitle = (idx, val) => {
+                const current = mockTitles[subject] || ["", "", "", "", ""];
+                current[idx] = val;
+                updateCloud('mockTitles', { ...mockTitles, [subject]: current });
+            };
+
             const getSourceKeyLogic = (cId, subj) => (cId === 'HPL' || cId === 'Language') ? `${subj}::SHARED` : `${subj}::${reportPeriod}`;
             const getBankKey = (catId) => getSourceKeyLogic(catId, subject);
 
             const handleAddCustomComment = (catId, level, text, skill = "General") => {
                 const key = getBankKey(catId);
-                const newBank = JSON.parse(JSON.stringify(customBank || {}));
+                const newBank = JSON.parse(JSON.stringify(customBank));
                 
                 if (!newBank[key]) newBank[key] = {};
                 if (!newBank[key][catId]) newBank[key][catId] = {};
@@ -1156,7 +1163,7 @@
 
             const handleEditComment = (catId, level, oldText, newText, skill = "General") => {
                 const key = getBankKey(catId);
-                const newBank = JSON.parse(JSON.stringify(customBank || {}));
+                const newBank = JSON.parse(JSON.stringify(customBank));
                 const comments = newBank[key]?.[catId]?.[level]?.[skill] || [];
                 const idx = comments.indexOf(oldText);
                 if (idx > -1) {
@@ -1167,7 +1174,7 @@
 
             const handleDeleteComment = (catId, level, text, skill = "General", isSkillDeletion = false) => {
                 const key = getBankKey(catId);
-                const newBank = JSON.parse(JSON.stringify(customBank || {}));
+                const newBank = JSON.parse(JSON.stringify(customBank));
 
                 if (isSkillDeletion) {
                     if (confirm(`Are you sure you want to delete the skill "${skill}" permanently?`)) {
@@ -1210,15 +1217,15 @@
             const handleShareToSubjects = (catId, targetSubjects) => {
                 const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
                 const sourceKeyLocal = getSourceKeyLogic(catId, subject);
-                const sourceCategoryData = (customBank[sourceKeyLocal]?.[catId]) || null; 
+                const sourceCategoryData = customBank[sourceKeyLocal]?.[catId]; 
                 
                 if (!sourceCategoryData) {
                     alert("No comments to share.");
                     return;
                 }
 
-                const newBank = JSON.parse(JSON.stringify(customBank || {}));
-                const newSubjectSkills = JSON.parse(JSON.stringify(subjectSkills || {}));
+                const newBank = JSON.parse(JSON.stringify(customBank));
+                const newSubjectSkills = JSON.parse(JSON.stringify(subjectSkills));
                 const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
                 const currentCatSkills = subjectSkills[subject]?.[catId] || ["General"];
 
@@ -1267,7 +1274,7 @@
 
                 if (!sourceData) return alert("No comments to share.");
 
-                const newBank = JSON.parse(JSON.stringify(customBank || {}));
+                const newBank = JSON.parse(JSON.stringify(customBank));
                 if (!newBank[targetKey]) newBank[targetKey] = {};
                 
                 // OVERWRITE LOGIC
@@ -1285,7 +1292,7 @@
                 if (!confirm(`⚠️ Are you sure you want to DELETE ALL comments for ${displayCat} in ${targetPeriod} for ${subject} ONLY?\n\nThis will NOT delete comments in other subjects.`)) return;
 
                 const key = isSharedCat ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
-                const newBank = JSON.parse(JSON.stringify(customBank || {}));
+                const newBank = JSON.parse(JSON.stringify(customBank));
 
                 if (newBank[key] && newBank[key][catId]) {
                     delete newBank[key][catId]; 
@@ -1343,7 +1350,7 @@
                 let out = "";
                 students.forEach((s, index) => {
                     out += `${s}\n`;
-                    const comments = (activeCategories || [])
+                    const comments = activeCategories
                         .map(c => {
                             const textVal = classData[s]?.[c.id] || "";
                             return textVal.trim();
@@ -1362,18 +1369,18 @@
                 setFinalBatchPrompt(out);
             };
 
-            const isSetup = (students || []).length === 0;
+            const isSetup = students.length === 0;
             const isResultStep = !isSetup && currentStepIndex === students.length;
             const activeStudent = (!isSetup && !isResultStep) ? students[currentStepIndex] : null;
             
-            const isCurrentStudentComplete = activeStudent ? (activeCategories || []).every(c => {
+            const isCurrentStudentComplete = activeStudent ? activeCategories.every(c => {
                 const textVal = classData[activeStudent]?.[c.id] || "";
                 return textVal.trim().length > 0;
             }) : true;
 
             // Compute valid active subjects (removes permanently deleted ones)
-            const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...(customSubjects || [])]))
-                .filter(s => !(deletedSubjects || []).includes(s));
+            const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]))
+                .filter(s => !deletedSubjects.includes(s));
 
             return (
                 <div className="min-h-screen bg-gray-50 pb-32">
@@ -1384,12 +1391,12 @@
                                 subject={subject} setSubject={setSubject}
                                 subjectOptions={allSubjectsList}
                                 department={department} setDepartment={setDepartment}
-                                departments={departments || []}
-                                subjectDepartments={subjectDepartments || {}}
+                                departments={departments}
+                                subjectDepartments={subjectDepartments}
                                 onStartClass={handleStartClass}
                                 onAddSubject={handleAddSubject}
                                 reportPeriod={reportPeriod} setReportPeriod={setReportPeriod}
-                                subjectTypes={subjectTypes || {}}
+                                subjectTypes={subjectTypes}
                                 mockTitles={mockTitles[subject] || ["", "", "", "", ""]}
                                 onUpdateMockTitle={handleUpdateMockTitle}
                                 onDeleteSubject={handleDeleteSubject}
@@ -1405,8 +1412,8 @@
                                 student={activeStudent}
                                 studentIndex={currentStepIndex}
                                 totalStudents={students.length}
-                                categories={activeCategories || []}
-                                classData={classData || {}}
+                                categories={activeCategories}
+                                classData={classData}
                                 optionsMapGenerator={getOptionsMap}
                                 onUpdateStudent={handleUpdateStudent}
                                 onAddCustomComment={handleAddCustomComment}
@@ -1462,8 +1469,8 @@
                             catId={shareModalData.catId}
                             currentSubject={subject}
                             allSubjects={allSubjectsList}
-                            subjectDepartments={subjectDepartments || {}}
-                            departments={departments || []}
+                            subjectDepartments={subjectDepartments}
+                            departments={departments}
                             onClose={() => setShareModalData(null)}
                             onConfirm={(selected) => handleShareToSubjects(shareModalData.catId, selected)}
                         />
