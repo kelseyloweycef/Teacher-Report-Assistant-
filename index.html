@@ -260,7 +260,7 @@
 
             return (
                 <div className="bg-school-blue text-white pt-8 pb-16 px-6 shadow-md border-b-4 border-school-lightBlue">
-                  <div className="max-w-7xl mx-auto flex items-start justify-between gap-4">
+                  <div className="max-w-5xl mx-auto flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
                         <div 
                             className="bg-white p-2 rounded-lg shadow-sm overflow-hidden relative group cursor-pointer hover:ring-2 ring-school-lightBlue transition" 
@@ -330,7 +330,6 @@
                         return { id: `Mock${i + 1}`, label: label };
                     });
                 } else if (isSharedStyle) {
-                    // Update Order: Assessment, Optionals, Improvement
                     finalCategories.push({id: "Assessment", label: "Assessment"});
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "Approaches to Learning"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
@@ -543,6 +542,7 @@
                 }
             };
 
+            // SAFE EXTRACTION: prevents crash if optionsMap hasn't loaded a skill yet
             const activeOptions = (activeLevel && optionsMap && optionsMap[currentDisplaySkill] && optionsMap[currentDisplaySkill][activeLevel]) || [];
 
             const handleAddSkillPrompt = () => {
@@ -652,9 +652,9 @@
                              )}
 
                              {!isManaging && (
-                                <div className="flex flex-col sm:flex-row gap-2 sm:items-center w-full">
+                                <div className="flex gap-2 items-center">
                                     <select 
-                                        className="flex-1 w-full sm:w-0 p-2 border border-blue-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-school-lightBlue outline-none cursor-pointer text-ellipsis"
+                                        className="flex-1 p-2 border border-blue-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-school-lightBlue outline-none cursor-pointer"
                                         onChange={(e) => {
                                             const newVal = e.target.value;
                                             onChange(currentValue ? currentValue + " " + newVal : newVal, true);
@@ -713,11 +713,8 @@
             const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
             const getSkill = (catId) => activeSkills[catId] || "General";
 
-            const activeComments = (categories || [])
-                .map(c => {
-                    const textVal = classData[student]?.[c.id] || "";
-                    return textVal.trim();
-                })
+            const activeComments = categories
+                .map(c => classData[student]?.[c.id]?.trim())
                 .filter(Boolean);
 
             const handleCategoryUpdate = (catId, val, isDropdownOrClear) => {
@@ -902,7 +899,7 @@
 
         const ActionPanel = ({ onBack, onNext, onReturnStart, isLastStep, disableNext }) => (
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
-                <div className="max-w-7xl mx-auto flex justify-between gap-4">
+                <div className="max-w-5xl mx-auto flex justify-between gap-4">
                     <div className="flex gap-2">
                         <button type="button" onClick={onReturnStart} className="flex items-center gap-2 px-4 py-3 rounded-lg font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors text-sm"><RotateCcw className="w-4 h-4" /> Start Over</button>
                         <button type="button" onClick={onBack} className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition-colors"><ArrowLeft className="w-5 h-5" /> Back</button>
@@ -1213,7 +1210,7 @@
             const handleShareToSubjects = (catId, targetSubjects) => {
                 const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
                 const sourceKeyLocal = getSourceKeyLogic(catId, subject);
-                const sourceCategoryData = customBank[sourceKeyLocal]?.[catId]; 
+                const sourceCategoryData = (customBank[sourceKeyLocal]?.[catId]) || null; 
                 
                 if (!sourceCategoryData) {
                     alert("No comments to share.");
@@ -1381,7 +1378,7 @@
             return (
                 <div className="min-h-screen bg-gray-50 pb-32">
                     <Header isConnected={isConnected} logo={sharedLogo} onLogoUpdate={(l) => updateCloud('logo', l)} />
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
+                    <main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
                         {isSetup && (
                             <ClassSetup
                                 subject={subject} setSubject={setSubject}
