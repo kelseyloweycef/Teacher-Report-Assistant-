@@ -1,1476 +1,1476 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Report Assistant (Shared Live)</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Report Assistant (Shared Live)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: { sans: ['Inter', 'sans-serif'] },
-            colors: { school: { blue: '#0f172a', lightBlue: '#1e3a8a', red: '#dc2626' } }
-          }
-        }
-      }
-    </script>
-    <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        .animate-in { animation: fadeIn 0.5s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .animate-in-right { animation: slideInRight 0.3s ease-out forwards; }
-        @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
-    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Inter', 'sans-serif'] },
+            colors: { school: { blue: '#0f172a', lightBlue: '#1e3a8a', red: '#dc2626' } }
+          }
+        }
+      }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .animate-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-in-right { animation: slideInRight 0.3s ease-out forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    </style>
 </head>
 <body class="bg-gray-50 text-slate-800 antialiased overflow-x-hidden">
-    
-    <div id="root"></div>
-
-    <script type="text/babel" data-presets="typescript,react">
-        const { useState, useEffect, useRef } = React;
-
-        // --- 1. FIREBASE CONFIGURATION ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyBzIP_EWP8o73U6W0xfeTFVriWopjzgrCE",
-            authDomain: "reports-shared-app.firebaseapp.com",
-            projectId: "reports-shared-app",
-            storageBucket: "reports-shared-app.firebasestorage.app",
-            messagingSenderId: "158065703096",
-            appId: "1:158065703096:web:160fc5d53253d63eea5c4d",
-            measurementId: "G-QECHCQCZ0C"
-        };
-
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const db = firebase.firestore();
-        const SHARED_DOC_REF = db.collection('app_data').doc('master_bank');
-
-        // --- CONSTANTS ---
-        const HPL_LEVELS = ["Comments"]; 
-        const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
-        
-        // --- ICONS ---
-        const Icon = ({ path, className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>;
-        const Users = ({ className }) => <Icon className={className} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />;
-        const Library = ({ className }) => <Icon className={className} path={<><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></>} />;
-        const Calendar = ({ className }) => <Icon className={className} path={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>} />;
-        const ArrowRight = ({ className }) => <Icon className={className} path={<><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>} />;
-        const ArrowLeft = ({ className }) => <Icon className={className} path={<><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></>} />;
-        const PlusCircle = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></>} />;
-        const CheckCircle = ({ className }) => <Icon className={className} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />;
-        const CloudCheck = ({ className }) => <Icon className={className} path={<><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 5.5-7.5"/><polyline points="8 15 12 19 16 15"/></>} />;
-        const CloudOff = ({ className }) => <Icon className={className} path={<><line x1="1" y1="1" x2="23" y2="23"/><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 .68 8.44"/></>} />;
-        const Camera = ({ className }) => <Icon className={className} path={<><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></>} />;
-        const Globe = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></>} />;
-        const Share = ({ className }) => <Icon className={className} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></>} />;
-        const RotateCcw = ({ className }) => <Icon className={className} path={<><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></>} />;
-        const Trash2 = ({ className }) => <Icon className={className} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />;
-        const Settings = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
-        const Pencil = ({ className }) => <Icon className={className} path={<><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></>} />;
-        const Save = ({ className }) => <Icon className={className} path={<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>} />;
-        const X = ({ className }) => <Icon className={className} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />;
-        const Download = ({ className }) => <Icon className={className} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>} />;
-        const Check = ({ className }) => <Icon className={className} path={<><polyline points="20 6 9 17 4 12"/></>} />;
-        const Filter = ({ className }) => <Icon className={className} path={<><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>} />;
-        const Briefcase = ({ className }) => <Icon className={className} path={<><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></>} />;
-        const FileText = ({ className }) => <Icon className={className} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></>} />;
-        const Copy = ({ className }) => <Icon className={className} path={<><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></>} />;
-        const ChevronDown = ({ className }) => <Icon className={className} path={<><polyline points="6 9 12 15 18 9"/></>} />;
-        const ChevronUp = ({ className }) => <Icon className={className} path={<><polyline points="18 15 12 9 6 15"/></>} />;
-
-        const DEFAULT_COMMENT_BANK = {
-            "IB History": {
-                "HPL": { "Comments": {"General": []} },
-                "Language": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
-                "Assessment": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
-                "Homework": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
-                "Improvement": { "Excellent": [], "Good": [], "Average": [], "Poor": [] }
-            }
-        };
-
-        const DEFAULT_SUBJECT_DEPARTMENTS = {
-            "IB History": "Social Studies",
-            "IGCSE History": "Social Studies",
-            "Year 9 History": "Social Studies",
-            "Year 9 Geography": "Social Studies"
-        };
-
-        // --- COMPONENTS ---
-
-        const ShareModal = ({ catId, currentSubject, allSubjects, subjectDepartments, departments, onClose, onConfirm }) => {
-            const [selected, setSelected] = useState([]);
-            const [selectedDept, setSelectedDept] = useState("");
-            
-            // Only allow sharing with valid active subjects
-            const availableSubjects = allSubjects.filter(s => s !== currentSubject);
-            
-            // Group available subjects by department
-            const subjectsByDept = {};
-            availableSubjects.forEach(s => {
-                let dept = subjectDepartments[s] || "Other";
-                if (!departments.includes(dept)) dept = "Other"; 
-                if (!subjectsByDept[dept]) subjectsByDept[dept] = [];
-                subjectsByDept[dept].push(s);
-            });
-
-            // Show ALL active departments, even if empty
-            const validDepartments = [...departments].sort();
-
-            // Default to expanding the current subject's department ONCE when opened
-            useEffect(() => {
-                const currentDept = subjectDepartments[currentSubject] || "Other";
-                if (departments.includes(currentDept)) {
-                    setSelectedDept(currentDept);
-                } else if (departments.length > 0) {
-                    setSelectedDept(departments[0]);
-                }
-                // eslint-disable-next-line react-hooks/exhaustive-deps
-            }, [currentSubject]); // Only fire once when currentSubject loads
-
-            const displayedSubjects = selectedDept ? (subjectsByDept[selectedDept] || []) : [];
-            const isAllDisplayedSelected = displayedSubjects.length > 0 && displayedSubjects.every(s => selected.includes(s));
-
-            const toggleDeptSelection = () => {
-                if (isAllDisplayedSelected) {
-                    // Deselect all in this specific dept view
-                    setSelected(selected.filter(s => !displayedSubjects.includes(s)));
-                } else {
-                    // Select all in this specific dept view
-                    const newSelected = [...selected];
-                    displayedSubjects.forEach(s => {
-                        if (!newSelected.includes(s)) newSelected.push(s);
-                    });
-                    setSelected(newSelected);
-                }
-            };
-
-            const toggleSubject = (s) => {
-                if (selected.includes(s)) setSelected(selected.filter(x => x !== s));
-                else setSelected([...selected, s]);
-            };
-
-            const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
-
-            return (
-                <div className="fixed inset-0 bg-black/40 z-[100] flex justify-end">
-                    <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in-right">
-                        <div className="p-6 border-b flex justify-between items-center bg-gray-50">
-                            <h2 className="text-xl font-bold text-school-blue flex items-center gap-2"><Share className="w-5 h-5"/> Share {displayCat}</h2>
-                            <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-800"><X className="w-6 h-6"/></button>
-                        </div>
-                        
-                        <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
-                            <p className="text-sm text-gray-600 mb-6">Select the subjects below to share your current <strong>{displayCat}</strong> comments and custom tabs with.</p>
-                            
-                            {validDepartments.length === 0 ? (
-                                <p className="text-sm text-red-500 italic">No other subjects exist to share with.</p>
-                            ) : (
-                                <>
-                                    <div className="mb-6">
-                                        <label className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
-                                            <Briefcase className="w-4 h-4"/> 1. Choose Department
-                                        </label>
-                                        <select 
-                                            value={selectedDept} 
-                                            onChange={e => setSelectedDept(e.target.value)}
-                                            className="w-full p-3 border border-school-lightBlue rounded-lg outline-none focus:ring-2 focus:ring-school-lightBlue text-sm font-medium bg-white cursor-pointer shadow-sm"
-                                        >
-                                            {validDepartments.map(d => (
-                                                <option key={d} value={d}>{d}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {selectedDept && (
-                                        <div className="animate-in">
-                                            <div className="mb-3 flex justify-between items-end border-b pb-2">
-                                                <label className="text-xs font-bold text-gray-500 uppercase">2. Select Subjects</label>
-                                                {displayedSubjects.length > 0 && (
-                                                    <button type="button" onClick={toggleDeptSelection} className="text-xs font-bold text-school-lightBlue hover:underline">
-                                                        {isAllDisplayedSelected ? "Deselect All in Department" : "Select All in Department"}
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                {displayedSubjects.length === 0 ? (
-                                                    <p className="text-sm text-gray-400 italic py-2">No other subjects found in this department.</p>
-                                                ) : (
-                                                    displayedSubjects.map(s => (
-                                                        <label key={s} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors shadow-sm ${selected.includes(s) ? 'bg-blue-50 border-school-lightBlue' : 'bg-white hover:bg-gray-50'}`}>
-                                                            <input type="checkbox" checked={selected.includes(s)} onChange={() => toggleSubject(s)} className="w-5 h-5 text-school-lightBlue rounded focus:ring-school-lightBlue" />
-                                                            <span className={`font-medium text-sm ${selected.includes(s) ? 'text-school-blue' : 'text-gray-700'}`}>{s}</span>
-                                                        </label>
-                                                    ))
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </div>
-
-                        <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
-                            <span className="text-sm font-bold text-school-blue bg-blue-100 px-3 py-1 rounded-full border border-blue-200">
-                                {selected.length} Selected Total
-                            </span>
-                            <div className="flex gap-2">
-                                <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg text-gray-600 font-bold hover:bg-gray-100 transition bg-white shadow-sm">Cancel</button>
-                                <button type="button" onClick={() => onConfirm(selected)} disabled={selected.length === 0} className="px-6 py-2 bg-school-lightBlue text-white rounded-lg font-bold hover:bg-school-blue disabled:opacity-50 transition shadow-md flex items-center gap-2">
-                                    <Share className="w-4 h-4"/> Share
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-
-        const Header = ({ isConnected, logo, onLogoUpdate }) => {
-            const DEFAULT_LOGO_URL = "https://cdn-icons-png.flaticon.com/512/3665/3665939.png"; 
-            const fileInputRef = useRef(null);
-
-            const handleFileChange = (e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        const result = reader.result;
-                        onLogoUpdate(result); // Sends to Shared DB
-                    };
-                    reader.readAsDataURL(file);
-                }
-            };
-
-            return (
-                <div className="bg-school-blue text-white pt-8 pb-16 px-6 shadow-md border-b-4 border-school-lightBlue">
-                  <div className="max-w-5xl mx-auto flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                        <div 
-                            className="bg-white p-2 rounded-lg shadow-sm overflow-hidden relative group cursor-pointer hover:ring-2 ring-school-lightBlue transition" 
-                            onClick={() => fileInputRef.current?.click()}
-                            title="Click to change logo for everyone"
-                        >
-                            <img src={logo || DEFAULT_LOGO_URL} className="h-16 w-16 object-contain" alt="School Logo" />
-                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Camera className="w-6 h-6 text-white mb-1" />
-                                <span className="text-[10px] font-bold text-white uppercase">Change</span>
-                            </div>
-                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-bold tracking-tight text-white">Teacher Report Assistant</h1>
-                            <div className="flex items-center gap-2 mt-2">
-                                {isConnected ? (
-                                    <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full font-bold border border-green-500/50"><CloudCheck className="w-3 h-3"/> Shared Bank Online</span>
-                                ) : (
-                                    <span className="flex items-center gap-1 text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded-full font-bold border border-red-500/50"><CloudOff className="w-3 h-3"/> Connecting...</span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                  </div>
-                </div>
-            );
-        };
-
-        const ClassSetup = ({ 
-            subject, setSubject, subjectOptions, department, setDepartment, departments, subjectDepartments, onStartClass, 
-            onAddSubject, reportPeriod, setReportPeriod, subjectTypes = {}, 
-            mockTitles, onUpdateMockTitle, onDeleteSubject, onDeleteDepartment, onAddDepartment
-        }) => {
-            const [namesInput, setNamesInput] = useState("");
-            const [isCreatingSubject, setIsCreatingSubject] = useState(false);
-            const [newSubjectName, setNewSubjectName] = useState("");
-            const [newSubjectType, setNewSubjectType] = useState('full');
-            
-            const [selectedOptionals, setSelectedOptionals] = useState({
-                "HPL": false,
-                "Language": false,
-                "Homework": false
-            });
-
-            // Protection against double click on the prompt button
-            const isPrompting = useRef(false);
-
-            useEffect(() => {
-                setSelectedOptionals({ "HPL": false, "Language": false, "Homework": false });
-            }, [subject]);
-
-            const handleStart = () => {
-                const students = namesInput.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-                if (students.length === 0) {
-                    alert("Please enter at least one student name.");
-                    return;
-                }
-                
-                let finalCategories = [];
-                const isSharedStyle = (subject && subjectTypes[subject] === 'shared') || (subject && subject.includes("Year 9")) || (isCreatingSubject && newSubjectType === 'shared');
-
-                if (reportPeriod === "Mocks") {
-                    const titles = mockTitles || ["", "", "", "", ""];
-                    finalCategories = titles.map((t, i) => {
-                        const label = t.trim() || `Mock Category ${i + 1}`;
-                        return { id: `Mock${i + 1}`, label: label };
-                    });
-                } else if (isSharedStyle) {
-                    // Update Order: Assessment, Optionals, Improvement
-                    finalCategories.push({id: "Assessment", label: "Assessment"});
-                    if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "Approaches to Learning"});
-                    if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
-                    if (selectedOptionals["Homework"]) finalCategories.push({id: "Homework", label: "Homework"});
-                    finalCategories.push({id: "Improvement", label: "Improvement"});
-                } else {
-                    finalCategories = [
-                        {id: "HPL", label: "Approaches to Learning"},
-                        {id: "Language", label: "Language"},
-                        {id: "Assessment", label: "Assessment"},
-                        {id: "Homework", label: "Homework"},
-                        {id: "Improvement", label: "Improvement"}
-                    ];
-                }
-
-                onStartClass(students, finalCategories);
-            };
-
-            const handleSaveSubjectLocal = (e) => {
-                e.preventDefault();
-                if (newSubjectName.trim()) {
-                    onAddSubject(newSubjectName.trim(), newSubjectType, department);
-                    setIsCreatingSubject(false);
-                    setNewSubjectName("");
-                }
-            };
-            
-            const handleAddDeptClick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (isPrompting.current) return;
-                
-                isPrompting.current = true;
-                setTimeout(() => { isPrompting.current = false; }, 500);
-
-                const name = prompt("Enter name for new department:");
-                if (name && name.trim()) {
-                    if (departments.includes(name.trim())) {
-                        alert("Department already exists.");
-                        return;
-                    }
-                    onAddDepartment(name.trim());
-                }
-            };
-
-            const isSharedStyle = (subject && subjectTypes[subject] === 'shared') || (subject && subject.includes("Year 9"));
-            const showSharedConfig = (isSharedStyle || (isCreatingSubject && newSubjectType === 'shared')) && reportPeriod !== "Mocks";
-            
-            const hasSelectedOptional = Object.values(selectedOptionals).some(v => v);
-
-            const filteredSubjects = Array.from(new Set(subjectOptions.filter(s => {
-                const dept = subjectDepartments[s] || "Other";
-                return dept === department;
-            })));
-
-            return (
-                <div className="bg-white rounded-xl shadow-lg p-8 border-t-4 border-school-lightBlue animate-in">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">Class Setup</h2>
-                    <div className="grid grid-cols-1 gap-8">
-                        <div className="space-y-2">
-                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
-                                <Briefcase className="w-4 h-4 text-school-lightBlue" /> 1. Select Department
-                            </label>
-                            <div className="flex gap-2 items-center">
-                                <select 
-                                    value={department} 
-                                    onChange={(e) => { setDepartment(e.target.value); setSubject(""); setIsCreatingSubject(false); }} 
-                                    className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg cursor-pointer"
-                                >
-                                    <option value="">-- Choose Department --</option>
-                                    {departments.map(d => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                                <button type="button" onClick={handleAddDeptClick} className="p-3 bg-school-lightBlue text-white rounded-lg hover:bg-school-blue transition-colors shadow-sm" title="Add new department"><PlusCircle className="w-5 h-5" /></button>
-                                {department && <button type="button" onClick={(e) => { e.preventDefault(); onDeleteDepartment(department); }} className="p-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors border border-red-200" title="Delete this department"><Trash2 className="w-5 h-5" /></button>}
-                            </div>
-                        </div>
-
-                        <div className={`space-y-2 transition-opacity duration-300 ${!department ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
-                                <Library className="w-4 h-4 text-school-lightBlue" /> 2. Select Report Group e.g. IB History
-                            </label>
-                            {isCreatingSubject ? (
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">New Subject Name ({department})</label>
-                                    <input type="text" autoFocus value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} placeholder="e.g. Year 8 Science" className="w-full p-3 border border-school-lightBlue rounded-lg outline-none mb-4 bg-white" />
-                                    
-                                    <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                                        <label className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border ${newSubjectType === 'full' ? 'bg-white border-school-lightBlue' : 'border-transparent'}`}><input type="radio" name="reportType" checked={newSubjectType === 'full'} onChange={() => setNewSubjectType('full')} className="w-4 h-4" /><div className="flex flex-col"><span className="text-sm font-bold">Full Report</span><span className="text-xs text-gray-500">5 Categories</span></div></label>
-                                        <label className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border ${newSubjectType === 'shared' ? 'bg-white border-school-lightBlue' : 'border-transparent'}`}><input type="radio" name="reportType" checked={newSubjectType === 'shared'} onChange={() => setNewSubjectType('shared')} className="w-4 h-4" /><div className="flex flex-col"><span className="text-sm font-bold">Shared Report</span><span className="text-xs text-gray-500">Year 9 Style</span></div></label>
-                                    </div>
-
-                                    <div className="flex gap-2 justify-end">
-                                        <button type="button" onClick={() => setIsCreatingSubject(false)} className="px-4 py-2 bg-white text-gray-600 border rounded-lg text-sm">Cancel</button>
-                                        <button type="button" onClick={handleSaveSubjectLocal} className="px-4 py-2 bg-school-lightBlue text-white rounded-lg font-bold text-sm">Create & Sync</button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex gap-2 items-center">
-                                    <div className="relative flex-1">
-                                        <select value={subject} onChange={(e) => e.target.value === "__NEW__" ? (setIsCreatingSubject(true), setSubject("")) : setSubject(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg">
-                                            <option value="">-- Select Report Group --</option>
-                                            {filteredSubjects.map(subj => <option key={subj} value={subj}>{subj}</option>)}
-                                            <option disabled>────────────────</option>
-                                            <option value="__NEW__" className="font-bold text-school-lightBlue">+ Add New Subject to {department}...</option>
-                                        </select>
-                                    </div>
-                                    {subject && subject !== "__NEW__" && <button type="button" onClick={(e) => { e.preventDefault(); onDeleteSubject(); }} className="p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200" title="Permanently delete this subject"><Trash2 className="w-5 h-5" /></button>}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
-                                <Calendar className="w-4 h-4 text-school-lightBlue" /> 3. Select Report Period
-                            </label>
-                            <div className="grid grid-cols-3 gap-4">
-                                {["Progress 2", "Progress 3", "Mocks"].map(p => (
-                                    <button type="button" key={p} onClick={() => setReportPeriod(p)} className={`p-4 rounded-lg border-2 font-bold ${reportPeriod === p ? 'border-school-lightBlue bg-school-lightBlue text-white' : 'border-gray-200 bg-gray-50 text-gray-600'}`}>{p}</button>
-                                ))}
-                            </div>
-                            
-                            {reportPeriod === "Mocks" && (
-                                <div className="bg-red-50 border border-red-100 rounded-lg p-5 mt-4">
-                                    <div className="flex items-center gap-2 mb-3"><FileText className="w-5 h-5 text-school-red" /><h3 className="font-bold text-gray-800">Setup Mock Exam Categories</h3></div>
-                                    <p className="text-sm text-gray-600 mb-4">Define your marking criteria categories below (e.g. "Knowledge", "Analysis", "Source Skills"). You will add comments for "Excellent", "Good", etc. in the next step.</p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {[0, 1, 2, 3, 4].map((idx) => (
-                                            <input key={idx} type="text" value={mockTitles?.[idx] || ""} onChange={(e) => onUpdateMockTitle && onUpdateMockTitle(idx, e.target.value)} placeholder={`Category ${idx + 1} Name`} className="p-3 text-sm border border-red-200 rounded outline-none focus:border-red-400" />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {showSharedConfig && (
-                                <div className="bg-blue-50 border border-school-lightBlue/30 rounded-lg p-5 mt-4">
-                                    <div className="flex items-center gap-2 mb-3"><Filter className="w-5 h-5 text-school-lightBlue" /><h3 className="font-bold text-gray-800">Configure Shared Report Categories</h3></div>
-                                    <p className="text-sm text-gray-600 mb-4">Assessment and Improvement are compulsory. Please select at least one optional category.</p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <label className="flex items-center gap-3 p-3 bg-gray-200 rounded-lg border border-gray-300 cursor-not-allowed opacity-70"><div className="w-5 h-5 bg-school-lightBlue text-white rounded flex items-center justify-center"><Check className="w-3 h-3"/></div><span className="font-bold text-gray-700">Assessment (Compulsory)</span></label>
-                                        <label className="flex items-center gap-3 p-3 bg-gray-200 rounded-lg border border-gray-300 cursor-not-allowed opacity-70"><div className="w-5 h-5 bg-school-lightBlue text-white rounded flex items-center justify-center"><Check className="w-3 h-3"/></div><span className="font-bold text-gray-700">Improvement (Compulsory)</span></label>
-                                        {[{id: "HPL", label: "Approaches to Learning"}, {id: "Language", label: "Language"}, {id: "Homework", label: "Homework"}].map(opt => (
-                                            <label key={opt.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedOptionals[opt.id] ? 'bg-white border-school-lightBlue shadow-sm' : 'bg-gray-50 border-transparent hover:bg-white'}`}>
-                                                <input type="checkbox" className="w-5 h-5 text-school-lightBlue rounded focus:ring-school-lightBlue" checked={selectedOptionals[opt.id]} onChange={(e) => setSelectedOptionals({...selectedOptionals, [opt.id]: e.target.checked})} />
-                                                <span className={`font-bold ${selectedOptionals[opt.id] ? 'text-school-blue' : 'text-gray-600'}`}>{opt.label} (Optional)</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
-                                <Users className="w-4 h-4 text-school-lightBlue" /> 4. Enter Student Names (Your Session Only)
-                            </label>
-                            <textarea value={namesInput} onChange={(e) => setNamesInput(e.target.value)} placeholder="Alice Smith&#10;Bob Jones" className="w-full p-4 border border-gray-300 rounded-lg h-64" />
-                        </div>
-
-                        <button type="button" onClick={handleStart} disabled={!subject || !namesInput.trim() || (showSharedConfig && !hasSelectedOptional)} className="w-full bg-school-red text-white font-bold py-4 rounded-lg shadow-md hover:bg-school-redHover disabled:opacity-50 disabled:cursor-not-allowed text-lg transition-all">
-                            {showSharedConfig && !hasSelectedOptional ? "Select at least 1 optional category" : <span>Start Report Cycle <ArrowRight className="w-5 h-5 inline" /></span>}
-                        </button>
-                    </div>
-                </div>
-            );
-        };
-
-        const CommentCategory = ({ 
-            category, optionsMap, currentValue, onChange, 
-            onAddComment, onEditComment, onDeleteComment, levels,
-            onAddSkill, onSwitchSkill, activeSkill, skillTabs, onDeleteSkill
-        }) => {
-            const [activeLevel, setActiveLevel] = useState(levels.length === 1 ? levels[0] : null);
-            const [isAdding, setIsAdding] = useState(false);
-            const [isManaging, setIsManaging] = useState(false);
-            const [newComment, setNewComment] = useState("");
-            const [editingText, setEditingText] = useState(null);
-            const [editText, setEditText] = useState("");
-
-            useEffect(() => {
-                if (levels.length === 1) {
-                    setActiveLevel(levels[0]);
-                } else if (!levels.includes(activeLevel)) {
-                    setActiveLevel(null);
-                }
-            }, [levels, category.id]);
-
-            const supportsSkills = category.id !== "Homework";
-            const currentDisplaySkill = supportsSkills ? activeSkill : "General";
-
-            const handleSaveNewComment = () => {
-                if (newComment.trim() && activeLevel) {
-                    onAddComment(activeLevel, newComment.trim(), currentDisplaySkill);
-                    setNewComment("");
-                    setIsAdding(false);
-                }
-            };
-
-            const handleSaveEdit = (oldText) => {
-                if(editText.trim()) {
-                    onEditComment(activeLevel, oldText, editText.trim(), currentDisplaySkill);
-                    setEditingText(null);
-                }
-            };
-
-            const activeOptions = (activeLevel && optionsMap && optionsMap[currentDisplaySkill] && optionsMap[currentDisplaySkill][activeLevel]) || [];
-
-            const handleAddSkillPrompt = () => {
-                const newSkill = prompt("Enter new custom tab name (e.g. 'Analysis', 'Grammar'):");
-                if (newSkill && newSkill.trim()) {
-                    onAddSkill(newSkill.trim());
-                }
-            };
-
-            let placeholderText = `Select a ${currentDisplaySkill} comment...`;
-            if(category.id === "Homework") placeholderText = "Select a homework comment...";
-
-            return (
-                <div className="w-full">
-                    {supportsSkills && (
-                        <div className="mb-4 border-b border-gray-200 pb-2">
-                            <div className="flex flex-wrap gap-2 items-center">
-                                <span className="text-xs font-bold text-gray-400 uppercase mr-2">Tabs:</span>
-                                {skillTabs.map(skill => (
-                                    <div key={skill} className="relative group">
-                                        <button 
-                                            type="button"
-                                            onClick={() => { 
-                                                onSwitchSkill(skill); 
-                                                setActiveLevel(levels.length === 1 ? levels[0] : null);
-                                                setIsAdding(false);
-                                                setIsManaging(false);
-                                            }} 
-                                            className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${activeSkill === skill ? 'bg-school-blue text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                                        >
-                                            {skill}
-                                        </button>
-                                        {skill !== "General" && activeSkill === skill && (
-                                            <button 
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); onDeleteSkill(skill); }} 
-                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                                                title="Delete this custom tab"
-                                            >
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
-                                <button type="button" onClick={handleAddSkillPrompt} className="p-1 bg-green-50 text-green-600 rounded-full hover:bg-green-100 border border-green-200" title="Add Custom Tab">
-                                    <PlusCircle className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {levels.length > 1 && (
-                        <div className="mb-4">
-                            <div className="flex flex-wrap gap-2">
-                                {levels.map((lvl) => (
-                                    <button type="button" key={lvl} onClick={() => { setActiveLevel(lvl); setIsAdding(false); setIsManaging(false); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${activeLevel === lvl ? 'bg-school-lightBlue text-white border-school-lightBlue shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-                                        {lvl}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                    
-                    {activeLevel && (
-                        <div className="mb-2 space-y-3 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                             <div className="flex justify-between items-center border-b border-blue-200 pb-2">
-                                <span className="text-xs font-bold text-school-blue uppercase">
-                                    {supportsSkills && currentDisplaySkill !== 'General' ? `${currentDisplaySkill} ` : ''}
-                                    {levels.length > 1 ? `${activeLevel} Comments` : 'Comments'}
-                                </span>
-                                <div className="flex gap-2">
-                                    <button type="button" onClick={() => { setIsManaging(!isManaging); setIsAdding(false); }} className={`text-xs font-bold flex items-center gap-1 ${isManaging ? 'text-school-blue' : 'text-gray-500 hover:text-gray-700'}`} title="Manage Comments"><Settings className="w-3 h-3"/> Manage</button>
-                                    <button type="button" onClick={() => { setIsAdding(!isAdding); setIsManaging(false); }} className="text-xs text-school-lightBlue font-bold flex items-center gap-1 hover:underline"><PlusCircle className="w-3 h-3"/> Add New</button>
-                                </div>
-                             </div>
-
-                             {isAdding && (
-                                <div className="flex gap-2">
-                                    <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} className="flex-1 border border-blue-300 p-2 rounded text-sm bg-white outline-none focus:ring-2 focus:ring-school-lightBlue" placeholder="Type new comment..." autoFocus />
-                                    <button type="button" onClick={handleSaveNewComment} className="bg-green-600 text-white px-3 font-bold rounded text-xs hover:bg-green-700">Save</button>
-                                </div>
-                             )}
-
-                             {isManaging && (
-                                <div className="bg-white border border-blue-200 rounded-lg p-2 max-h-48 overflow-y-auto custom-scrollbar">
-                                    {activeOptions.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No comments yet.</p>}
-                                    {activeOptions.map((opt, idx) => (
-                                        <div key={idx} className="flex items-center justify-between text-xs py-2 border-b last:border-0 border-gray-100">
-                                            {editingText === opt ? (
-                                                <div className="flex-1 flex gap-2">
-                                                    <input type="text" value={editText} onChange={(e)=>setEditText(e.target.value)} className="flex-1 border p-1 rounded outline-none focus:border-school-lightBlue" />
-                                                    <button type="button" onClick={() => handleSaveEdit(opt)} className="text-green-600 hover:bg-green-50 p-1 rounded"><Save className="w-4 h-4"/></button>
-                                                    <button type="button" onClick={() => setEditingText(null)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X className="w-4 h-4"/></button>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <span className="flex-1 mr-2 text-gray-700">{opt}</span>
-                                                    <div className="flex gap-1">
-                                                        <button type="button" onClick={() => { setEditingText(opt); setEditText(opt); }} className="text-blue-400 hover:text-blue-600"><Pencil className="w-4 h-4"/></button>
-                                                        <button type="button" onClick={() => { if(confirm("Delete this shared comment?")) onDeleteComment(activeLevel, opt, currentDisplaySkill); }} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                             )}
-
-                             {!isManaging && (
-                                <div className="flex gap-2 items-center">
-                                    <select 
-                                        className="flex-1 p-2 border border-blue-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-school-lightBlue outline-none cursor-pointer"
-                                        onChange={(e) => {
-                                            const newVal = e.target.value;
-                                            onChange(currentValue ? currentValue + " " + newVal : newVal, true);
-                                        }}
-                                        value="" 
-                                    >
-                                        <option value="" disabled>▼ {placeholderText}</option>
-                                        {activeOptions.length === 0 && <option disabled>No comments available</option>}
-                                        {activeOptions.map((opt, idx) => <option key={idx} value={opt}>{opt}</option>)}
-                                    </select>
-                                    
-                                    {currentValue && (
-                                        <button type="button" onClick={() => onChange("", true)} className="px-3 py-2 bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-200 transition whitespace-nowrap">
-                                            Clear Selection
-                                        </button>
-                                    )}
-                                </div>
-                             )}
-                        </div>
-                    )}
-                    
-                    {/* EDITABLE TEXT AREA */}
-                    <textarea 
-                        rows={3} 
-                        value={currentValue} 
-                        onChange={(e) => onChange(e.target.value, false)}
-                        className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-school-lightBlue outline-none transition-all shadow-sm" 
-                        placeholder={`The ${category.label} comment will build here. You can also click here to type or edit manually...`}
-                    ></textarea>
-                </div>
-            );
-        };
-
-        const StudentStep = ({ 
-            subject, student, studentIndex, totalStudents, categories, classData, optionsMapGenerator, 
-            onUpdateStudent, onAddCustomComment, onEditComment, onDeleteComment, 
-            onOpenShareModal, onSharePeriod, onDeleteAllComments, reportPeriod, onAddSkill, skillTabs, onDeleteSkill, subjectSkills
-        }) => {
-            const [activeTabId, setActiveTabId] = useState(categories[0]?.id);
-            const [activeSkills, setActiveSkills] = useState({});
-            const [copied, setCopied] = useState(false);
-            const [actionHistory, setActionHistory] = useState([]);
-
-            useEffect(() => {
-                setActiveTabId(categories[0]?.id);
-                setActionHistory([]); 
-            }, [student, categories]);
-
-            const activeCategory = categories.find(c => c.id === activeTabId) || categories[0];
-            const isSubjectShareable = ['HPL', 'Language', 'Homework'].includes(activeCategory.id);
-            const isPeriodShareable = !['HPL', 'Language'].includes(activeCategory.id); 
-            const isSkillCategory = activeCategory.id !== 'Homework';
-            const currentSkillTabs = isSkillCategory ? (subjectSkills[activeCategory.id] || ["General"]) : ["General"];
-            const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
-            const getSkill = (catId) => activeSkills[catId] || "General";
-
-            const activeComments = categories
-                .map(c => classData[student]?.[c.id]?.trim())
-                .filter(Boolean);
-
-            const handleCategoryUpdate = (catId, val, isDropdownOrClear) => {
-                if (isDropdownOrClear) {
-                    setActionHistory(prev => [...prev, { catId, oldVal: classData[student]?.[catId] || "" }]);
-                }
-                onUpdateStudent(student, catId, val);
-            };
-
-            const undoLastAction = () => {
-                if (actionHistory.length === 0) return;
-                const last = actionHistory[actionHistory.length - 1];
-                onUpdateStudent(student, last.catId, last.oldVal);
-                setActionHistory(prev => prev.slice(0, -1));
-            };
-
-            // SINGLE NEWLINE joining for copying, ensures they paste correctly to Word/Systems 
-            // without double gaps, allowing manual bulleting later.
-            const handleCopy = () => {
-                if (activeComments.length === 0) return;
-                const clipboardText = activeComments.join("\n");
-                navigator.clipboard.writeText(clipboardText).then(() => {
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                });
-            };
-
-            return (
-                <div className="space-y-6 animate-in">
-                    <div className="bg-school-blue text-white p-6 rounded-xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center border-l-8 border-school-lightBlue gap-4">
-                        <div>
-                            <span className="text-school-lightBlue font-bold bg-white px-3 py-1 rounded-full text-xs uppercase tracking-wide mr-3 inline-block mb-2">
-                                Student {studentIndex + 1} of {totalStudents}
-                            </span>
-                            <h2 className="text-3xl font-bold align-middle">{student}</h2>
-                        </div>
-                    </div>
-
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">1. Select a category</h3>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                            {categories.map(cat => {
-                                // SAFE HAS DATA CHECK: Prevents blank screen crash
-                                const textVal = classData[student]?.[cat.id] || "";
-                                const hasData = textVal.trim().length > 0;
-                                const isActive = activeTabId === cat.id;
-                                return (
-                                    <button 
-                                        key={cat.id} 
-                                        type="button"
-                                        onClick={() => setActiveTabId(cat.id)}
-                                        className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${isActive ? 'bg-school-lightBlue text-white shadow-md ring-2 ring-school-lightBlue ring-offset-2' : (hasData ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}`}
-                                    >
-                                        {cat.label}
-                                        {hasData && <CheckCircle className="w-4 h-4" />}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-4">
-                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-school-lightBlue" /> Editing: {activeCategory.label}
-                            </h3>
-                            
-                            <div className="flex gap-2">
-                                <button type="button" onClick={() => onDeleteAllComments(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-red-600 text-xs font-bold rounded border border-gray-200 hover:bg-red-50 hover:border-red-200 transition shadow-sm" title={`Clear all ${activeCategory.label} comments for ${subject}`}>
-                                    <Trash2 className="w-3 h-3"/> Clear Bank
-                                </button>
-
-                                {isSubjectShareable && (
-                                    <button type="button" onClick={() => onOpenShareModal(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-purple-700 text-xs font-bold rounded border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition shadow-sm">
-                                        <Globe className="w-3 h-3"/> Share w/ Subjects
-                                    </button>
-                                )}
-
-                                {isPeriodShareable && reportPeriod === "Progress 2" && (
-                                    <button type="button" onClick={() => onSharePeriod(activeCategory.id, "Progress 3")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
-                                        <Share className="w-3 h-3"/> Share P2 ➔ P3
-                                    </button>
-                                )}
-
-                                {isPeriodShareable && reportPeriod === "Progress 3" && (
-                                    <button type="button" onClick={() => onSharePeriod(activeCategory.id, "Progress 2")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
-                                        <Share className="w-3 h-3"/> Share P3 ➔ P2
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                        
-                        <div className="p-6">
-                            <CommentCategory 
-                                key={`${student}-${activeCategory.id}`}
-                                category={activeCategory} 
-                                optionsMap={optionsMapGenerator(activeCategory.id)} 
-                                currentValue={classData[student]?.[activeCategory.id] || ""} 
-                                onChange={(val, isDropdown) => handleCategoryUpdate(activeCategory.id, val, isDropdown)} 
-                                onAddComment={(level, text, skill) => onAddCustomComment(activeCategory.id, level, text, skill)} 
-                                onEditComment={(level, oldText, newText, skill) => onEditComment(activeCategory.id, level, oldText, newText, skill)}
-                                onDeleteComment={(level, text, skill) => onDeleteComment(activeCategory.id, level, text, skill)}
-                                levels={levels}
-                                onAddSkill={(skill) => onAddSkill(activeCategory.id, skill)}
-                                onDeleteSkill={(skill) => onDeleteSkill(activeCategory.id, skill)}
-                                skillTabs={currentSkillTabs}
-                                activeSkill={getSkill(activeCategory.id)}
-                                onSwitchSkill={(skill) => setActiveSkills(prev => ({...prev, [activeCategory.id]: skill}))}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="bg-blue-50 border border-school-lightBlue/30 rounded-xl p-5 shadow-inner mt-4">
-                        <div className="flex justify-between items-center mb-3">
-                            <h3 className="text-xs font-bold text-school-blue uppercase tracking-wider flex items-center gap-2">
-                                <span>Final Report Preview for {student}</span>
-                            </h3>
-                            <div className="flex gap-2">
-                                {actionHistory.length > 0 && (
-                                    <button 
-                                        type="button"
-                                        onClick={undoLastAction} 
-                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded shadow-sm transition-colors border bg-white text-orange-600 border-orange-200 hover:bg-orange-50"
-                                    >
-                                        <RotateCcw className="w-3 h-3" /> Undo Last Addition
-                                    </button>
-                                )}
-                                {activeComments.length > 0 && (
-                                    <button 
-                                        type="button"
-                                        onClick={handleCopy} 
-                                        className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded shadow-sm transition-colors border ${copied ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white text-school-lightBlue border-blue-200 hover:bg-blue-100'}`}
-                                    >
-                                        {copied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                        {copied ? "Copied!" : "Copy Report"}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg border border-blue-100 text-gray-800 text-sm leading-relaxed shadow-sm">
-                            {activeComments.length > 0 ? (
-                                <div className="flex flex-col gap-3">
-                                    {activeComments.map((comment, idx) => (
-                                        <p key={idx} className="m-0">{comment}</p>
-                                    ))}
-                                </div>
-                            ) : (
-                                <span className="text-gray-400 italic">Comments will appear here as you select them...</span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const ResultPanel = ({ prompt }) => {
-            const handleDownload = () => {
-                const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Class Reports</title></head><body>";
-                const footer = "</body></html>";
-                // Convert single newlines to HTML line breaks for word document so they format clearly
-                const htmlContent = prompt.replace(/\n/g, "<br>");
-                const sourceHTML = header + htmlContent + footer;
-                const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
-                const fileDownload = document.createElement("a");
-                document.body.appendChild(fileDownload);
-                fileDownload.href = source;
-                fileDownload.download = 'Class_Reports.doc';
-                fileDownload.click();
-                document.body.removeChild(fileDownload);
-            };
-            return (
-                <div className="mt-8 bg-white rounded-xl shadow-xl overflow-hidden border border-gray-200">
-                    <div className="p-4 border-b bg-gray-50 font-bold text-gray-700 flex justify-between items-center">
-                        <span>Generated Class Report Document</span>
-                        <div className="flex gap-2">
-                            <button type="button" onClick={handleDownload} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs font-bold"><Download className="w-4 h-4" /> Download as Word Doc</button>
-                        </div>
-                    </div>
-                    <textarea readOnly value={prompt} className="w-full min-h-[500px] p-6 bg-gray-50 resize-y font-mono text-sm border-none" />
-                </div>
-            );
-        };
-
-        const ActionPanel = ({ onBack, onNext, onReturnStart, isLastStep, disableNext }) => (
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
-                <div className="max-w-5xl mx-auto flex justify-between gap-4">
-                    <div className="flex gap-2">
-                        <button type="button" onClick={onReturnStart} className="flex items-center gap-2 px-4 py-3 rounded-lg font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors text-sm"><RotateCcw className="w-4 h-4" /> Start Over</button>
-                        <button type="button" onClick={onBack} className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition-colors"><ArrowLeft className="w-5 h-5" /> Back</button>
-                    </div>
-                    <button 
-                        type="button"
-                        onClick={onNext} 
-                        disabled={disableNext}
-                        className={`flex items-center gap-2 px-8 py-3 rounded-lg font-bold text-white shadow-md transition-all ${disableNext ? 'bg-gray-400 cursor-not-allowed' : (isLastStep ? 'bg-green-600 hover:bg-green-700' : 'bg-school-lightBlue hover:bg-school-blue')}`}
-                    >
-                        {disableNext ? <><X className="w-5 h-5"/> Complete All Categories</> : (isLastStep ? <><CheckCircle className="w-5 h-5" /> Finish & Generate</> : <><ArrowRight className="w-5 h-5" /> Next Student</>)}
-                    </button>
-                </div>
-            </div>
-        );
-
-        const App = () => {
-            const [customSubjects, setCustomSubjects] = useState([]);
-            const [deletedSubjects, setDeletedSubjects] = useState([]);
-            const [subjectTypes, setSubjectTypes] = useState({});
-            const [mockTitles, setMockTitles] = useState({});
-            const [customBank, setCustomBank] = useState({});
-            const [isConnected, setIsConnected] = useState(false);
-            const [sharedLogo, setSharedLogo] = useState(null);
-            const [subjectDepartments, setSubjectDepartments] = useState({});
-            const [departments, setDepartments] = useState(["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"]);
-            const [subjectSkills, setSubjectSkills] = useState({});
-
-            const [subject, setSubject] = useState("");
-            const [department, setDepartment] = useState("");
-            const [students, setStudents] = useState([]);
-            const [currentStepIndex, setCurrentStepIndex] = useState(0);
-            const [reportPeriod, setReportPeriod] = useState("Progress 2");
-            const [classData, setClassData] = useState({});
-            const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
-            const [activeCategories, setActiveCategories] = useState([]);
-            
-            // Modal state
-            const [shareModalData, setShareModalData] = useState(null);
-
-            useEffect(() => {
-                const unsubscribe = SHARED_DOC_REF.onSnapshot((doc) => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        setCustomSubjects(data.customSubjects || []);
-                        setDeletedSubjects(data.deletedSubjects || []);
-                        setSubjectTypes(data.subjectTypes || {});
-                        setMockTitles(data.mockTitles || {});
-                        setCustomBank(data.customBank || {});
-                        setSubjectDepartments(data.subjectDepartments || {});
-                        if(data.departments) setDepartments(data.departments);
-                        if(data.subjectSkills) setSubjectSkills(data.subjectSkills);
-                        if(data.logo) setSharedLogo(data.logo);
-                        setIsConnected(true);
-                    } else {
-                        // FIX FOR EMPTY DB WIPE: Ensure we don't accidentally overwrite if network fails
-                        SHARED_DOC_REF.get({ source: 'server' }).then(dbDoc => {
-                            if (!dbDoc.exists) {
-                                SHARED_DOC_REF.set({
-                                    customSubjects: Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), 
-                                    deletedSubjects: [],
-                                    subjectTypes: {}, 
-                                    mockTitles: {}, 
-                                    customBank: DEFAULT_COMMENT_BANK,
-                                    subjectDepartments: DEFAULT_SUBJECT_DEPARTMENTS, 
-                                    subjectSkills: {},
-                                    departments: ["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"],
-                                    logo: null
-                                }, { merge: true });
-                            }
-                        }).catch(console.error);
-                        setIsConnected(true);
-                    }
-                }, (err) => {
-                    console.error("Firebase Sync Error:", err);
-                    setIsConnected(false);
-                });
-                return () => unsubscribe();
-            }, []);
-
-            const updateCloud = (key, value) => {
-                SHARED_DOC_REF.set({ [key]: value }, { merge: true }).catch(console.error);
-            };
-
-            const handleAddSubject = (newSubject, type, dept) => {
-                let updatedSubjects = [...customSubjects];
-                if (!updatedSubjects.includes(newSubject)) {
-                    updatedSubjects.push(newSubject);
-                }
-
-                // If it was previously deleted, remove it from the deleted list so it comes back clean
-                let updatedDeleted = deletedSubjects.filter(s => s !== newSubject);
-
-                const updatedTypes = { ...subjectTypes, [newSubject]: type };
-                const updatedDepts = { ...subjectDepartments, [newSubject]: dept };
-
-                let newBank = { ...customBank };
-                const sharedKey = `${newSubject}::SHARED`;
-                if (!newBank[sharedKey]) {
-                     newBank[sharedKey] = {
-                        "HPL": { "Comments": {"General": []} },
-                        "Language": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} },
-                        "Assessment": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} },
-                        "Homework": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} },
-                        "Improvement": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} }
-                     };
-                }
-                
-                // Optimistic UI Updates
-                setCustomSubjects(updatedSubjects);
-                setDeletedSubjects(updatedDeleted);
-                setSubjectTypes(updatedTypes);
-                setSubjectDepartments(updatedDepts);
-                setCustomBank(newBank);
-                setSubject(newSubject);
-
-                SHARED_DOC_REF.set({
-                    customSubjects: updatedSubjects,
-                    deletedSubjects: updatedDeleted,
-                    subjectTypes: updatedTypes,
-                    subjectDepartments: updatedDepts,
-                    customBank: newBank
-                }, { merge: true }).catch(console.error);
-            };
-
-            const handleDeleteSubject = () => {
-                if (!subject || subject === "__NEW__") return;
-                if (confirm(`⚠️ Are you sure you want to PERMANENTLY delete the subject "${subject}"?`)) {
-                    const updatedSubjects = customSubjects.filter(s => s !== subject);
-                    
-                    const newDeleted = [...deletedSubjects];
-                    if (!newDeleted.includes(subject)) newDeleted.push(subject);
-
-                    const updatedTypes = { ...subjectTypes }; delete updatedTypes[subject];
-                    const updatedMockTitles = { ...mockTitles }; delete updatedMockTitles[subject];
-                    const updatedDepts = { ...subjectDepartments }; delete updatedDepts[subject];
-                    const updatedSkills = { ...subjectSkills }; delete updatedSkills[subject];
-                    
-                    const updatedBank = { ...customBank };
-                    Object.keys(updatedBank).forEach(key => {
-                        if (key.startsWith(`${subject}::`)) {
-                            delete updatedBank[key];
-                        }
-                    });
-
-                    // Optimistic UI Updates
-                    setCustomSubjects(updatedSubjects);
-                    setDeletedSubjects(newDeleted);
-                    setSubjectTypes(updatedTypes);
-                    setMockTitles(updatedMockTitles);
-                    setSubjectDepartments(updatedDepts);
-                    setSubjectSkills(updatedSkills);
-                    setCustomBank(updatedBank);
-                    setSubject("");
-
-                    SHARED_DOC_REF.set({ 
-                        customSubjects: updatedSubjects, 
-                        deletedSubjects: newDeleted,
-                        subjectTypes: updatedTypes, 
-                        mockTitles: updatedMockTitles, 
-                        subjectDepartments: updatedDepts, 
-                        subjectSkills: updatedSkills,
-                        customBank: updatedBank 
-                    }, { merge: true }).then(() => { alert("Subject deleted."); }).catch(console.error);
-                }
-            };
-            
-            const handleAddDepartment = (newDept) => {
-                if (!departments.includes(newDept)) {
-                    const newDepts = [...departments, newDept];
-                    // Optimistic UI updates
-                    setDepartments(newDepts);
-                    setDepartment(newDept);
-                    
-                    SHARED_DOC_REF.set({ departments: newDepts }, { merge: true }).catch(console.error);
-                }
-            };
-
-            const handleDeleteDepartment = (deptToDelete) => {
-                 if (confirm(`⚠️ DANGER: Delete department "${deptToDelete}"?\n\nThis will PERMANENTLY DELETE ALL SUBJECTS and comments inside this department.`)) {
-                    const newDepts = departments.filter(d => d !== deptToDelete);
-                    
-                    let updatedSubjects = [...customSubjects];
-                    let newDeleted = [...deletedSubjects];
-                    let updatedTypes = { ...subjectTypes };
-                    let updatedMockTitles = { ...mockTitles };
-                    let updatedDepts = { ...subjectDepartments };
-                    let updatedSkills = { ...subjectSkills };
-                    let updatedBank = { ...customBank };
-
-                    // Get all subjects mapped to this department, including default ones
-                    const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]));
-                    const subjectsInDept = allSubjectsList.filter(s => (subjectDepartments[s] || "Other") === deptToDelete);
-
-                    subjectsInDept.forEach(subj => {
-                        updatedSubjects = updatedSubjects.filter(s => s !== subj);
-                        if (!newDeleted.includes(subj)) newDeleted.push(subj);
-                        delete updatedTypes[subj];
-                        delete updatedMockTitles[subj];
-                        delete updatedDepts[subj];
-                        delete updatedSkills[subj];
-                        Object.keys(updatedBank).forEach(key => {
-                            if (key.startsWith(`${subj}::`)) {
-                                delete updatedBank[key];
-                            }
-                        });
-                    });
-
-                    // Optimistic updates
-                    setDepartments(newDepts);
-                    setCustomSubjects(updatedSubjects);
-                    setDeletedSubjects(newDeleted);
-                    setSubjectTypes(updatedTypes);
-                    setMockTitles(updatedMockTitles);
-                    setSubjectDepartments(updatedDepts);
-                    setSubjectSkills(updatedSkills);
-                    setCustomBank(updatedBank);
-                    
-                    if(department === deptToDelete) {
-                        setDepartment("");
-                        setSubject("");
-                    }
-
-                    SHARED_DOC_REF.set({ 
-                        departments: newDepts,
-                        customSubjects: updatedSubjects,
-                        deletedSubjects: newDeleted,
-                        subjectTypes: updatedTypes,
-                        mockTitles: updatedMockTitles,
-                        subjectDepartments: updatedDepts,
-                        subjectSkills: updatedSkills,
-                        customBank: updatedBank
-                    }, { merge: true }).catch(console.error);
-                 }
-            };
-
-            const handleUpdateMockTitle = (idx, val) => {
-                const current = mockTitles[subject] || ["", "", "", "", ""];
-                current[idx] = val;
-                updateCloud('mockTitles', { ...mockTitles, [subject]: current });
-            };
-
-            const getSourceKeyLogic = (cId, subj) => (cId === 'HPL' || cId === 'Language') ? `${subj}::SHARED` : `${subj}::${reportPeriod}`;
-            const getBankKey = (catId) => getSourceKeyLogic(catId, subject);
-
-            const handleAddCustomComment = (catId, level, text, skill = "General") => {
-                const key = getBankKey(catId);
-                const newBank = JSON.parse(JSON.stringify(customBank));
-                
-                if (!newBank[key]) newBank[key] = {};
-                if (!newBank[key][catId]) newBank[key][catId] = {};
-                if (!newBank[key][catId][level]) newBank[key][catId][level] = {};
-                if (!newBank[key][catId][level][skill]) newBank[key][catId][level][skill] = [];
-
-                if (!newBank[key][catId][level][skill].includes(text)) {
-                    newBank[key][catId][level][skill].push(text);
-                    updateCloud('customBank', newBank);
-                }
-            };
-
-            const handleEditComment = (catId, level, oldText, newText, skill = "General") => {
-                const key = getBankKey(catId);
-                const newBank = JSON.parse(JSON.stringify(customBank));
-                const comments = newBank[key]?.[catId]?.[level]?.[skill] || [];
-                const idx = comments.indexOf(oldText);
-                if (idx > -1) {
-                    comments[idx] = newText;
-                    updateCloud('customBank', newBank);
-                }
-            };
-
-            const handleDeleteComment = (catId, level, text, skill = "General", isSkillDeletion = false) => {
-                const key = getBankKey(catId);
-                const newBank = JSON.parse(JSON.stringify(customBank));
-
-                if (isSkillDeletion) {
-                    if (confirm(`Are you sure you want to delete the skill "${skill}" permanently?`)) {
-                        const currentSkills = subjectSkills[subject] || {};
-                        const catSkills = currentSkills[catId] || ["General"];
-                        const newCatSkills = catSkills.filter(s => s !== skill);
-                        
-                        const updatedSubjectSkills = { ...subjectSkills, [subject]: { ...currentSkills, [catId]: newCatSkills } };
-                        updateCloud('subjectSkills', updatedSubjectSkills);
-                    }
-                } else {
-                    const comments = newBank[key]?.[catId]?.[level]?.[skill] || [];
-                    newBank[key][catId][level][skill] = comments.filter(c => c !== text);
-                    updateCloud('customBank', newBank);
-                }
-            };
-
-            const handleAddSkill = (catId, newSkill) => {
-                if (catId === 'Homework') return; 
-
-                const currentSkills = subjectSkills[subject] || {};
-                const catSkills = currentSkills[catId] || ["General"];
-                
-                if(!catSkills.includes(newSkill)) {
-                    const newCatSkills = [...catSkills, newSkill];
-                    const updatedSubjectSkills = { ...subjectSkills, [subject]: { ...currentSkills, [catId]: newCatSkills } };
-                    updateCloud('subjectSkills', updatedSubjectSkills);
-                }
-            };
-
-            const handleDeleteSkill = (catId, skillToDelete) => {
-                if (catId === 'Homework') return;
-                const currentSkills = subjectSkills[subject] || {};
-                const catSkills = currentSkills[catId] || ["General"];
-                const newCatSkills = catSkills.filter(s => s !== skillToDelete);
-                const updatedSubjectSkills = { ...subjectSkills, [subject]: { ...currentSkills, [catId]: newCatSkills } };
-                updateCloud('subjectSkills', updatedSubjectSkills);
-            };
-
-            const handleShareToSubjects = (catId, targetSubjects) => {
-                const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
-                const sourceKeyLocal = getSourceKeyLogic(catId, subject);
-                const sourceCategoryData = customBank[sourceKeyLocal]?.[catId]; 
-                
-                if (!sourceCategoryData) {
-                    alert("No comments to share.");
-                    return;
-                }
-
-                const newBank = JSON.parse(JSON.stringify(customBank));
-                const newSubjectSkills = JSON.parse(JSON.stringify(subjectSkills));
-                const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
-                const currentCatSkills = subjectSkills[subject]?.[catId] || ["General"];
-
-                targetSubjects.forEach(targetSubj => {
-                    const targetKey = getSourceKeyLogic(catId, targetSubj);
-                    if (!newBank[targetKey]) newBank[targetKey] = {};
-                    if (!newBank[targetKey][catId]) newBank[targetKey][catId] = {};
-
-                    let targetSubjectSkillsObj = newSubjectSkills[targetSubj] || {};
-                    let targetCatSkills = targetSubjectSkillsObj[catId] || ["General"];
-                    targetSubjectSkillsObj[catId] = Array.from(new Set([...targetCatSkills, ...currentCatSkills]));
-                    newSubjectSkills[targetSubj] = targetSubjectSkillsObj;
-
-                    levels.forEach(lvl => {
-                        const sourceLevelObj = sourceCategoryData[lvl] || {};
-                        Object.keys(sourceLevelObj).forEach(skillName => {
-                             const sourceComments = sourceLevelObj[skillName] || [];
-                             if (sourceComments.length > 0) {
-                                if (!newBank[targetKey][catId][lvl]) newBank[targetKey][catId][lvl] = {};
-                                if (!newBank[targetKey][catId][lvl][skillName]) newBank[targetKey][catId][lvl][skillName] = [];
-                                
-                                const existing = newBank[targetKey][catId][lvl][skillName] || [];
-                                newBank[targetKey][catId][lvl][skillName] = Array.from(new Set([...existing, ...sourceComments]));
-                             }
-                        });
-                    });
-                });
-
-                SHARED_DOC_REF.set({
-                    customBank: newBank,
-                    subjectSkills: newSubjectSkills
-                }, { merge: true }).then(() => {
-                    alert(`Successfully updated ${displayCat} comments and tabs across ${targetSubjects.length} subjects!`);
-                    setShareModalData(null);
-                }).catch(console.error);
-            };
-
-            const handleSharePeriod = (catId, targetPeriod) => {
-                const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
-                const sourcePeriod = reportPeriod;
-                if (!confirm(`⚠️ WARNING: You are about to share ${displayCat} comments from ${sourcePeriod} to ${targetPeriod}.\n\nThis will DELETE and REPLACE all existing ${displayCat} comments in ${targetPeriod}.\n\nAre you sure?`)) return;
-
-                const sourceKey = `${subject}::${sourcePeriod}`;
-                const targetKey = `${subject}::${targetPeriod}`;
-                const sourceData = customBank[sourceKey]?.[catId];
-
-                if (!sourceData) return alert("No comments to share.");
-
-                const newBank = JSON.parse(JSON.stringify(customBank));
-                if (!newBank[targetKey]) newBank[targetKey] = {};
-                
-                // OVERWRITE LOGIC
-                newBank[targetKey][catId] = JSON.parse(JSON.stringify(sourceData));
-
-                updateCloud('customBank', newBank);
-                alert(`Successfully overwrote ${targetPeriod} comments with ${sourcePeriod} data!`);
-            };
-
-            const handleDeleteAllInCategory = (catId) => {
-                const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
-                const isSharedCat = catId === 'HPL' || catId === 'Language';
-                const targetPeriod = isSharedCat ? 'Shared Bank' : reportPeriod;
-                
-                if (!confirm(`⚠️ Are you sure you want to DELETE ALL comments for ${displayCat} in ${targetPeriod} for ${subject} ONLY?\n\nThis will NOT delete comments in other subjects.`)) return;
-
-                const key = isSharedCat ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
-                const newBank = JSON.parse(JSON.stringify(customBank));
-
-                if (newBank[key] && newBank[key][catId]) {
-                    delete newBank[key][catId]; 
-                    updateCloud('customBank', newBank);
-                    alert(`All comments in the ${displayCat} category for ${subject} have been deleted.`);
-                } else {
-                    alert(`No comments found to delete in ${displayCat} for ${subject}.`);
-                }
-            };
-
-            const handleStartClass = (names, categories) => {
-                setStudents(names);
-                setActiveCategories(categories);
-                const initData = {};
-                names.forEach(n => initData[n] = {});
-                setClassData(initData);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            };
-
-            const getOptionsMap = (catId) => {
-                const key = getBankKey(catId);
-                const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
-                const map = {};
-                
-                const mySkills = (subjectSkills[subject]?.[catId]) || ["General"];
-
-                mySkills.forEach(skill => {
-                    map[skill] = {};
-                    levels.forEach(l => {
-                        let customs = [];
-                        const levelData = customBank[key]?.[catId]?.[l];
-                        
-                        if (Array.isArray(levelData)) {
-                            if (skill === "General") customs = levelData; 
-                        } else if (levelData && typeof levelData === 'object') {
-                            customs = levelData[skill] || [];
-                        }
-
-                        let defaults = [];
-                        if (skill === "General") {
-                             defaults = DEFAULT_COMMENT_BANK[subject]?.[catId]?.[l] || [];
-                        }
-
-                        map[skill][l] = Array.from(new Set([...defaults, ...customs]));
-                    });
-                });
-                return map;
-            };
-
-            const handleUpdateStudent = (name, catId, val) => {
-                setClassData(prev => ({ ...prev, [name]: { ...prev[name], [catId]: val } }));
-            };
-
-            const generateFinalBatch = () => {
-                let out = "";
-                students.forEach((s, index) => {
-                    out += `${s}\n`;
-                    const comments = activeCategories
-                        .map(c => {
-                            const textVal = classData[s]?.[c.id] || "";
-                            return textVal.trim();
-                        })
-                        .filter(Boolean);
-                        
-                    if (comments.length > 0) {
-                        // SINGLE NEWLINE ensures comments do not have huge gaps when downloading word doc. 
-                        out += comments.join("\n") + "\n";
-                    }
-                    
-                    if (index < students.length - 1) {
-                        out += `\n-----------------------------------\n\n`;
-                    }
-                });
-                setFinalBatchPrompt(out);
-            };
-
-            const isSetup = students.length === 0;
-            const isResultStep = !isSetup && currentStepIndex === students.length;
-            const activeStudent = (!isSetup && !isResultStep) ? students[currentStepIndex] : null;
-            
-            const isCurrentStudentComplete = activeStudent ? activeCategories.every(c => {
-                const textVal = classData[activeStudent]?.[c.id] || "";
-                return textVal.trim().length > 0;
-            }) : true;
-
-            // Compute valid active subjects (removes permanently deleted ones)
-            const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]))
-                .filter(s => !deletedSubjects.includes(s));
-
-            return (
-                <div className="min-h-screen bg-gray-50 pb-32">
-                    <Header isConnected={isConnected} logo={sharedLogo} onLogoUpdate={(l) => updateCloud('logo', l)} />
-                    <main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
-                        {isSetup && (
-                            <ClassSetup
-                                subject={subject} setSubject={setSubject}
-                                subjectOptions={allSubjectsList}
-                                department={department} setDepartment={setDepartment}
-                                departments={departments}
-                                subjectDepartments={subjectDepartments}
-                                onStartClass={handleStartClass}
-                                onAddSubject={handleAddSubject}
-                                reportPeriod={reportPeriod} setReportPeriod={setReportPeriod}
-                                subjectTypes={subjectTypes}
-                                mockTitles={mockTitles[subject] || ["", "", "", "", ""]}
-                                onUpdateMockTitle={handleUpdateMockTitle}
-                                onDeleteSubject={handleDeleteSubject}
-                                onDeleteDepartment={handleDeleteDepartment}
-                                onAddDepartment={handleAddDepartment}
-                            />
-                        )}
-
-                        {activeStudent && (
-                            <StudentStep
-                                key={activeStudent}
-                                subject={subject}
-                                student={activeStudent}
-                                studentIndex={currentStepIndex}
-                                totalStudents={students.length}
-                                categories={activeCategories}
-                                classData={classData}
-                                optionsMapGenerator={getOptionsMap}
-                                onUpdateStudent={handleUpdateStudent}
-                                onAddCustomComment={handleAddCustomComment}
-                                onEditComment={handleEditComment}
-                                onDeleteComment={handleDeleteComment}
-                                onOpenShareModal={(catId) => setShareModalData({ catId })}
-                                onSharePeriod={handleSharePeriod}
-                                onDeleteAllComments={handleDeleteAllInCategory}
-                                reportPeriod={reportPeriod}
-                                onAddSkill={handleAddSkill}
-                                onDeleteSkill={handleDeleteSkill}
-                                subjectSkills={subjectSkills[subject] || {}}
-                            />
-                        )}
-
-                        {isResultStep && (
-                            <div className="animate-in">
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6 text-center">
-                                    <h2 className="text-2xl font-bold text-green-800">Class Reports Generated!</h2>
-                                </div>
-                                <ResultPanel prompt={finalBatchPrompt} />
-                                <div className="mt-8 text-center">
-                                    <button type="button" onClick={() => window.location.reload()} className="text-gray-500 hover:text-gray-700 underline">Start Over</button>
-                                </div>
-                            </div>
-                        )}
-                    </main>
-
-                    {!isSetup && !isResultStep && (
-                        <ActionPanel
-                            onBack={() => setCurrentStepIndex(currentStepIndex - 1)}
-                            onReturnStart={() => {
-                                if(confirm("Return to start? Current student progress will be lost.")) {
-                                    setStudents([]);
-                                    setSubject("");
-                                    setCurrentStepIndex(0);
-                                    setClassData({});
-                                }
-                            }}
-                            onNext={() => {
-                                if (currentStepIndex === students.length - 1) generateFinalBatch();
-                                setCurrentStepIndex(currentStepIndex + 1);
-                                window.scrollTo(0,0);
-                            }}
-                            isLastStep={currentStepIndex === students.length - 1}
-                            disableNext={!isCurrentStudentComplete}
-                        />
-                    )}
-
-                    {/* SHARE OVERLAY MODAL */}
-                    {shareModalData && (
-                        <ShareModal 
-                            catId={shareModalData.catId}
-                            currentSubject={subject}
-                            allSubjects={allSubjectsList}
-                            subjectDepartments={subjectDepartments}
-                            departments={departments}
-                            onClose={() => setShareModalData(null)}
-                            onConfirm={(selected) => handleShareToSubjects(shareModalData.catId, selected)}
-                        />
-                    )}
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+    
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="typescript,react">
+        const { useState, useEffect, useRef } = React;
+
+        // --- 1. FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzIP_EWP8o73U6W0xfeTFVriWopjzgrCE",
+            authDomain: "reports-shared-app.firebaseapp.com",
+            projectId: "reports-shared-app",
+            storageBucket: "reports-shared-app.firebasestorage.app",
+            messagingSenderId: "158065703096",
+            appId: "1:158065703096:web:160fc5d53253d63eea5c4d",
+            measurementId: "G-QECHCQCZ0C"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+        const SHARED_DOC_REF = db.collection('app_data').doc('master_bank');
+
+        // --- CONSTANTS ---
+        const HPL_LEVELS = ["Comments"]; 
+        const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
+        
+        // --- ICONS ---
+        const Icon = ({ path, className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>;
+        const Users = ({ className }) => <Icon className={className} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />;
+        const Library = ({ className }) => <Icon className={className} path={<><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></>} />;
+        const Calendar = ({ className }) => <Icon className={className} path={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>} />;
+        const ArrowRight = ({ className }) => <Icon className={className} path={<><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>} />;
+        const ArrowLeft = ({ className }) => <Icon className={className} path={<><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></>} />;
+        const PlusCircle = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></>} />;
+        const CheckCircle = ({ className }) => <Icon className={className} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />;
+        const CloudCheck = ({ className }) => <Icon className={className} path={<><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 5.5-7.5"/><polyline points="8 15 12 19 16 15"/></>} />;
+        const CloudOff = ({ className }) => <Icon className={className} path={<><line x1="1" y1="1" x2="23" y2="23"/><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 .68 8.44"/></>} />;
+        const Camera = ({ className }) => <Icon className={className} path={<><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></>} />;
+        const Globe = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></>} />;
+        const Share = ({ className }) => <Icon className={className} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></>} />;
+        const RotateCcw = ({ className }) => <Icon className={className} path={<><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></>} />;
+        const Trash2 = ({ className }) => <Icon className={className} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />;
+        const Settings = ({ className }) => <Icon className={className} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
+        const Pencil = ({ className }) => <Icon className={className} path={<><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></>} />;
+        const Save = ({ className }) => <Icon className={className} path={<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></>} />;
+        const X = ({ className }) => <Icon className={className} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />;
+        const Download = ({ className }) => <Icon className={className} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>} />;
+        const Check = ({ className }) => <Icon className={className} path={<><polyline points="20 6 9 17 4 12"/></>} />;
+        const Filter = ({ className }) => <Icon className={className} path={<><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>} />;
+        const Briefcase = ({ className }) => <Icon className={className} path={<><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></>} />;
+        const FileText = ({ className }) => <Icon className={className} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></>} />;
+        const Copy = ({ className }) => <Icon className={className} path={<><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></>} />;
+        const ChevronDown = ({ className }) => <Icon className={className} path={<><polyline points="6 9 12 15 18 9"/></>} />;
+        const ChevronUp = ({ className }) => <Icon className={className} path={<><polyline points="18 15 12 9 6 15"/></>} />;
+
+        const DEFAULT_COMMENT_BANK = {
+            "IB History": {
+                "HPL": { "Comments": {"General": []} },
+                "Language": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                "Assessment": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                "Homework": { "Excellent": [], "Good": [], "Average": [], "Poor": [] },
+                "Improvement": { "Excellent": [], "Good": [], "Average": [], "Poor": [] }
+            }
+        };
+
+        const DEFAULT_SUBJECT_DEPARTMENTS = {
+            "IB History": "Social Studies",
+            "IGCSE History": "Social Studies",
+            "Year 9 History": "Social Studies",
+            "Year 9 Geography": "Social Studies"
+        };
+
+        // --- COMPONENTS ---
+
+        const ShareModal = ({ catId, currentSubject, allSubjects, subjectDepartments, departments, onClose, onConfirm }) => {
+            const [selected, setSelected] = useState([]);
+            const [selectedDept, setSelectedDept] = useState("");
+            
+            // Only allow sharing with valid active subjects
+            const availableSubjects = allSubjects.filter(s => s !== currentSubject);
+            
+            // Group available subjects by department
+            const subjectsByDept = {};
+            availableSubjects.forEach(s => {
+                let dept = subjectDepartments[s] || "Other";
+                if (!departments.includes(dept)) dept = "Other"; 
+                if (!subjectsByDept[dept]) subjectsByDept[dept] = [];
+                subjectsByDept[dept].push(s);
+            });
+
+            // Show ALL active departments, even if empty
+            const validDepartments = [...departments].sort();
+
+            // Default to expanding the current subject's department ONCE when opened
+            useEffect(() => {
+                const currentDept = subjectDepartments[currentSubject] || "Other";
+                if (departments.includes(currentDept)) {
+                    setSelectedDept(currentDept);
+                } else if (departments.length > 0) {
+                    setSelectedDept(departments[0]);
+                }
+                // eslint-disable-next-line react-hooks/exhaustive-deps
+            }, [currentSubject]); // Only fire once when currentSubject loads
+
+            const displayedSubjects = selectedDept ? (subjectsByDept[selectedDept] || []) : [];
+            const isAllDisplayedSelected = displayedSubjects.length > 0 && displayedSubjects.every(s => selected.includes(s));
+
+            const toggleDeptSelection = () => {
+                if (isAllDisplayedSelected) {
+                    // Deselect all in this specific dept view
+                    setSelected(selected.filter(s => !displayedSubjects.includes(s)));
+                } else {
+                    // Select all in this specific dept view
+                    const newSelected = [...selected];
+                    displayedSubjects.forEach(s => {
+                        if (!newSelected.includes(s)) newSelected.push(s);
+                    });
+                    setSelected(newSelected);
+                }
+            };
+
+            const toggleSubject = (s) => {
+                if (selected.includes(s)) setSelected(selected.filter(x => x !== s));
+                else setSelected([...selected, s]);
+            };
+
+            const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
+
+            return (
+                <div className="fixed inset-0 bg-black/40 z-[100] flex justify-end">
+                    <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in-right">
+                        <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+                            <h2 className="text-xl font-bold text-school-blue flex items-center gap-2"><Share className="w-5 h-5"/> Share {displayCat}</h2>
+                            <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-800"><X className="w-6 h-6"/></button>
+                        </div>
+                        
+                        <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
+                            <p className="text-sm text-gray-600 mb-6">Select the subjects below to share your current <strong>{displayCat}</strong> comments and custom tabs with.</p>
+                            
+                            {validDepartments.length === 0 ? (
+                                <p className="text-sm text-red-500 italic">No other subjects exist to share with.</p>
+                            ) : (
+                                <>
+                                    <div className="mb-6">
+                                        <label className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
+                                            <Briefcase className="w-4 h-4"/> 1. Choose Department
+                                        </label>
+                                        <select 
+                                            value={selectedDept} 
+                                            onChange={e => setSelectedDept(e.target.value)}
+                                            className="w-full p-3 border border-school-lightBlue rounded-lg outline-none focus:ring-2 focus:ring-school-lightBlue text-sm font-medium bg-white cursor-pointer shadow-sm"
+                                        >
+                                            {validDepartments.map(d => (
+                                                <option key={d} value={d}>{d}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {selectedDept && (
+                                        <div className="animate-in">
+                                            <div className="mb-3 flex justify-between items-end border-b pb-2">
+                                                <label className="text-xs font-bold text-gray-500 uppercase">2. Select Subjects</label>
+                                                {displayedSubjects.length > 0 && (
+                                                    <button type="button" onClick={toggleDeptSelection} className="text-xs font-bold text-school-lightBlue hover:underline">
+                                                        {isAllDisplayedSelected ? "Deselect All in Department" : "Select All in Department"}
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                {displayedSubjects.length === 0 ? (
+                                                    <p className="text-sm text-gray-400 italic py-2">No other subjects found in this department.</p>
+                                                ) : (
+                                                    displayedSubjects.map(s => (
+                                                        <label key={s} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors shadow-sm ${selected.includes(s) ? 'bg-blue-50 border-school-lightBlue' : 'bg-white hover:bg-gray-50'}`}>
+                                                            <input type="checkbox" checked={selected.includes(s)} onChange={() => toggleSubject(s)} className="w-5 h-5 text-school-lightBlue rounded focus:ring-school-lightBlue" />
+                                                            <span className={`font-medium text-sm ${selected.includes(s) ? 'text-school-blue' : 'text-gray-700'}`}>{s}</span>
+                                                        </label>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
+                            <span className="text-sm font-bold text-school-blue bg-blue-100 px-3 py-1 rounded-full border border-blue-200">
+                                {selected.length} Selected Total
+                            </span>
+                            <div className="flex gap-2">
+                                <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg text-gray-600 font-bold hover:bg-gray-100 transition bg-white shadow-sm">Cancel</button>
+                                <button type="button" onClick={() => onConfirm(selected)} disabled={selected.length === 0} className="px-6 py-2 bg-school-lightBlue text-white rounded-lg font-bold hover:bg-school-blue disabled:opacity-50 transition shadow-md flex items-center gap-2">
+                                    <Share className="w-4 h-4"/> Share
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+
+        const Header = ({ isConnected, logo, onLogoUpdate }) => {
+            const DEFAULT_LOGO_URL = "https://cdn-icons-png.flaticon.com/512/3665/3665939.png"; 
+            const fileInputRef = useRef(null);
+
+            const handleFileChange = (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const result = reader.result;
+                        onLogoUpdate(result); // Sends to Shared DB
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            return (
+                <div className="bg-school-blue text-white pt-8 pb-16 px-6 shadow-md border-b-4 border-school-lightBlue">
+                  <div className="max-w-5xl mx-auto flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                        <div 
+                            className="bg-white p-2 rounded-lg shadow-sm overflow-hidden relative group cursor-pointer hover:ring-2 ring-school-lightBlue transition" 
+                            onClick={() => fileInputRef.current?.click()}
+                            title="Click to change logo for everyone"
+                        >
+                            <img src={logo || DEFAULT_LOGO_URL} className="h-16 w-16 object-contain" alt="School Logo" />
+                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Camera className="w-6 h-6 text-white mb-1" />
+                                <span className="text-[10px] font-bold text-white uppercase">Change</span>
+                            </div>
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight text-white">Teacher Report Assistant</h1>
+                            <div className="flex items-center gap-2 mt-2">
+                                {isConnected ? (
+                                    <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full font-bold border border-green-500/50"><CloudCheck className="w-3 h-3"/> Shared Bank Online</span>
+                                ) : (
+                                    <span className="flex items-center gap-1 text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded-full font-bold border border-red-500/50"><CloudOff className="w-3 h-3"/> Connecting...</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+            );
+        };
+
+        const ClassSetup = ({ 
+            subject, setSubject, subjectOptions, department, setDepartment, departments, subjectDepartments, onStartClass, 
+            onAddSubject, reportPeriod, setReportPeriod, subjectTypes = {}, 
+            mockTitles, onUpdateMockTitle, onDeleteSubject, onDeleteDepartment, onAddDepartment
+        }) => {
+            const [namesInput, setNamesInput] = useState("");
+            const [isCreatingSubject, setIsCreatingSubject] = useState(false);
+            const [newSubjectName, setNewSubjectName] = useState("");
+            const [newSubjectType, setNewSubjectType] = useState('full');
+            
+            const [selectedOptionals, setSelectedOptionals] = useState({
+                "HPL": false,
+                "Language": false,
+                "Homework": false
+            });
+
+            // Protection against double click on the prompt button
+            const isPrompting = useRef(false);
+
+            useEffect(() => {
+                setSelectedOptionals({ "HPL": false, "Language": false, "Homework": false });
+            }, [subject]);
+
+            const handleStart = () => {
+                const students = namesInput.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+                if (students.length === 0) {
+                    alert("Please enter at least one student name.");
+                    return;
+                }
+                
+                let finalCategories = [];
+                const isSharedStyle = (subject && subjectTypes[subject] === 'shared') || (subject && subject.includes("Year 9")) || (isCreatingSubject && newSubjectType === 'shared');
+
+                if (reportPeriod === "Mocks") {
+                    const titles = mockTitles || ["", "", "", "", ""];
+                    finalCategories = titles.map((t, i) => {
+                        const label = t.trim() || `Mock Category ${i + 1}`;
+                        return { id: `Mock${i + 1}`, label: label };
+                    });
+                } else if (isSharedStyle) {
+                    // Update Order: Assessment, Optionals, Improvement
+                    finalCategories.push({id: "Assessment", label: "Assessment"});
+                    if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "Approaches to Learning"});
+                    if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
+                    if (selectedOptionals["Homework"]) finalCategories.push({id: "Homework", label: "Homework"});
+                    finalCategories.push({id: "Improvement", label: "Improvement"});
+                } else {
+                    finalCategories = [
+                        {id: "HPL", label: "Approaches to Learning"},
+                        {id: "Language", label: "Language"},
+                        {id: "Assessment", label: "Assessment"},
+                        {id: "Homework", label: "Homework"},
+                        {id: "Improvement", label: "Improvement"}
+                    ];
+                }
+
+                onStartClass(students, finalCategories);
+            };
+
+            const handleSaveSubjectLocal = (e) => {
+                e.preventDefault();
+                if (newSubjectName.trim()) {
+                    onAddSubject(newSubjectName.trim(), newSubjectType, department);
+                    setIsCreatingSubject(false);
+                    setNewSubjectName("");
+                }
+            };
+            
+            const handleAddDeptClick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isPrompting.current) return;
+                
+                isPrompting.current = true;
+                setTimeout(() => { isPrompting.current = false; }, 500);
+
+                const name = prompt("Enter name for new department:");
+                if (name && name.trim()) {
+                    if (departments.includes(name.trim())) {
+                        alert("Department already exists.");
+                        return;
+                    }
+                    onAddDepartment(name.trim());
+                }
+            };
+
+            const isSharedStyle = (subject && subjectTypes[subject] === 'shared') || (subject && subject.includes("Year 9"));
+            const showSharedConfig = (isSharedStyle || (isCreatingSubject && newSubjectType === 'shared')) && reportPeriod !== "Mocks";
+            
+            const hasSelectedOptional = Object.values(selectedOptionals).some(v => v);
+
+            const filteredSubjects = Array.from(new Set(subjectOptions.filter(s => {
+                const dept = subjectDepartments[s] || "Other";
+                return dept === department;
+            })));
+
+            return (
+                <div className="bg-white rounded-xl shadow-lg p-8 border-t-4 border-school-lightBlue animate-in">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6">Class Setup</h2>
+                    <div className="grid grid-cols-1 gap-8">
+                        <div className="space-y-2">
+                             <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                <Briefcase className="w-4 h-4 text-school-lightBlue" /> 1. Select Department
+                            </label>
+                            <div className="flex gap-2 items-center">
+                                <select 
+                                    value={department} 
+                                    onChange={(e) => { setDepartment(e.target.value); setSubject(""); setIsCreatingSubject(false); }} 
+                                    className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg cursor-pointer"
+                                >
+                                    <option value="">-- Choose Department --</option>
+                                    {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                                </select>
+                                <button type="button" onClick={handleAddDeptClick} className="p-3 bg-school-lightBlue text-white rounded-lg hover:bg-school-blue transition-colors shadow-sm" title="Add new department"><PlusCircle className="w-5 h-5" /></button>
+                                {department && <button type="button" onClick={(e) => { e.preventDefault(); onDeleteDepartment(department); }} className="p-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors border border-red-200" title="Delete this department"><Trash2 className="w-5 h-5" /></button>}
+                            </div>
+                        </div>
+
+                        <div className={`space-y-2 transition-opacity duration-300 ${!department ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                <Library className="w-4 h-4 text-school-lightBlue" /> 2. Select Report Group e.g. IB History
+                            </label>
+                            {isCreatingSubject ? (
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">New Subject Name ({department})</label>
+                                    <input type="text" autoFocus value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} placeholder="e.g. Year 8 Science" className="w-full p-3 border border-school-lightBlue rounded-lg outline-none mb-4 bg-white" />
+                                    
+                                    <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                                        <label className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border ${newSubjectType === 'full' ? 'bg-white border-school-lightBlue' : 'border-transparent'}`}><input type="radio" name="reportType" checked={newSubjectType === 'full'} onChange={() => setNewSubjectType('full')} className="w-4 h-4" /><div className="flex flex-col"><span className="text-sm font-bold">Full Report</span><span className="text-xs text-gray-500">5 Categories</span></div></label>
+                                        <label className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg border ${newSubjectType === 'shared' ? 'bg-white border-school-lightBlue' : 'border-transparent'}`}><input type="radio" name="reportType" checked={newSubjectType === 'shared'} onChange={() => setNewSubjectType('shared')} className="w-4 h-4" /><div className="flex flex-col"><span className="text-sm font-bold">Shared Report</span><span className="text-xs text-gray-500">Year 9 Style</span></div></label>
+                                    </div>
+
+                                    <div className="flex gap-2 justify-end">
+                                        <button type="button" onClick={() => setIsCreatingSubject(false)} className="px-4 py-2 bg-white text-gray-600 border rounded-lg text-sm">Cancel</button>
+                                        <button type="button" onClick={handleSaveSubjectLocal} className="px-4 py-2 bg-school-lightBlue text-white rounded-lg font-bold text-sm">Create & Sync</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex gap-2 items-center">
+                                    <div className="relative flex-1">
+                                        <select value={subject} onChange={(e) => e.target.value === "__NEW__" ? (setIsCreatingSubject(true), setSubject("")) : setSubject(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg bg-white text-lg">
+                                            <option value="">-- Select Report Group --</option>
+                                            {filteredSubjects.map(subj => <option key={subj} value={subj}>{subj}</option>)}
+                                            <option disabled>────────────────</option>
+                                            <option value="__NEW__" className="font-bold text-school-lightBlue">+ Add New Subject to {department}...</option>
+                                        </select>
+                                    </div>
+                                    {subject && subject !== "__NEW__" && <button type="button" onClick={(e) => { e.preventDefault(); onDeleteSubject(); }} className="p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200" title="Permanently delete this subject"><Trash2 className="w-5 h-5" /></button>}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                <Calendar className="w-4 h-4 text-school-lightBlue" /> 3. Select Report Period
+                            </label>
+                            <div className="grid grid-cols-3 gap-4">
+                                {["Progress 2", "Progress 3", "Mocks"].map(p => (
+                                    <button type="button" key={p} onClick={() => setReportPeriod(p)} className={`p-4 rounded-lg border-2 font-bold ${reportPeriod === p ? 'border-school-lightBlue bg-school-lightBlue text-white' : 'border-gray-200 bg-gray-50 text-gray-600'}`}>{p}</button>
+                                ))}
+                            </div>
+                            
+                            {reportPeriod === "Mocks" && (
+                                <div className="bg-red-50 border border-red-100 rounded-lg p-5 mt-4">
+                                    <div className="flex items-center gap-2 mb-3"><FileText className="w-5 h-5 text-school-red" /><h3 className="font-bold text-gray-800">Setup Mock Exam Categories</h3></div>
+                                    <p className="text-sm text-gray-600 mb-4">Define your marking criteria categories below (e.g. "Knowledge", "Analysis", "Source Skills"). You will add comments for "Excellent", "Good", etc. in the next step.</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {[0, 1, 2, 3, 4].map((idx) => (
+                                            <input key={idx} type="text" value={mockTitles?.[idx] || ""} onChange={(e) => onUpdateMockTitle && onUpdateMockTitle(idx, e.target.value)} placeholder={`Category ${idx + 1} Name`} className="p-3 text-sm border border-red-200 rounded outline-none focus:border-red-400" />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {showSharedConfig && (
+                                <div className="bg-blue-50 border border-school-lightBlue/30 rounded-lg p-5 mt-4">
+                                    <div className="flex items-center gap-2 mb-3"><Filter className="w-5 h-5 text-school-lightBlue" /><h3 className="font-bold text-gray-800">Configure Shared Report Categories</h3></div>
+                                    <p className="text-sm text-gray-600 mb-4">Assessment and Improvement are compulsory. Please select at least one optional category.</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <label className="flex items-center gap-3 p-3 bg-gray-200 rounded-lg border border-gray-300 cursor-not-allowed opacity-70"><div className="w-5 h-5 bg-school-lightBlue text-white rounded flex items-center justify-center"><Check className="w-3 h-3"/></div><span className="font-bold text-gray-700">Assessment (Compulsory)</span></label>
+                                        <label className="flex items-center gap-3 p-3 bg-gray-200 rounded-lg border border-gray-300 cursor-not-allowed opacity-70"><div className="w-5 h-5 bg-school-lightBlue text-white rounded flex items-center justify-center"><Check className="w-3 h-3"/></div><span className="font-bold text-gray-700">Improvement (Compulsory)</span></label>
+                                        {[{id: "HPL", label: "Approaches to Learning"}, {id: "Language", label: "Language"}, {id: "Homework", label: "Homework"}].map(opt => (
+                                            <label key={opt.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedOptionals[opt.id] ? 'bg-white border-school-lightBlue shadow-sm' : 'bg-gray-50 border-transparent hover:bg-white'}`}>
+                                                <input type="checkbox" className="w-5 h-5 text-school-lightBlue rounded focus:ring-school-lightBlue" checked={selectedOptionals[opt.id]} onChange={(e) => setSelectedOptionals({...selectedOptionals, [opt.id]: e.target.checked})} />
+                                                <span className={`font-bold ${selectedOptionals[opt.id] ? 'text-school-blue' : 'text-gray-600'}`}>{opt.label} (Optional)</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className={`space-y-2 transition-opacity duration-300 ${!subject ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                <Users className="w-4 h-4 text-school-lightBlue" /> 4. Enter Student Names (Your Session Only)
+                            </label>
+                            <textarea value={namesInput} onChange={(e) => setNamesInput(e.target.value)} placeholder="Alice Smith&#10;Bob Jones" className="w-full p-4 border border-gray-300 rounded-lg h-64" />
+                        </div>
+
+                        <button type="button" onClick={handleStart} disabled={!subject || !namesInput.trim() || (showSharedConfig && !hasSelectedOptional)} className="w-full bg-school-red text-white font-bold py-4 rounded-lg shadow-md hover:bg-school-redHover disabled:opacity-50 disabled:cursor-not-allowed text-lg transition-all">
+                            {showSharedConfig && !hasSelectedOptional ? "Select at least 1 optional category" : <span>Start Report Cycle <ArrowRight className="w-5 h-5 inline" /></span>}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const CommentCategory = ({ 
+            category, optionsMap, currentValue, onChange, 
+            onAddComment, onEditComment, onDeleteComment, levels,
+            onAddSkill, onSwitchSkill, activeSkill, skillTabs, onDeleteSkill
+        }) => {
+            const [activeLevel, setActiveLevel] = useState(levels.length === 1 ? levels[0] : null);
+            const [isAdding, setIsAdding] = useState(false);
+            const [isManaging, setIsManaging] = useState(false);
+            const [newComment, setNewComment] = useState("");
+            const [editingText, setEditingText] = useState(null);
+            const [editText, setEditText] = useState("");
+
+            useEffect(() => {
+                if (levels.length === 1) {
+                    setActiveLevel(levels[0]);
+                } else if (!levels.includes(activeLevel)) {
+                    setActiveLevel(null);
+                }
+            }, [levels, category.id]);
+
+            const supportsSkills = category.id !== "Homework";
+            const currentDisplaySkill = supportsSkills ? activeSkill : "General";
+
+            const handleSaveNewComment = () => {
+                if (newComment.trim() && activeLevel) {
+                    onAddComment(activeLevel, newComment.trim(), currentDisplaySkill);
+                    setNewComment("");
+                    setIsAdding(false);
+                }
+            };
+
+            const handleSaveEdit = (oldText) => {
+                if(editText.trim()) {
+                    onEditComment(activeLevel, oldText, editText.trim(), currentDisplaySkill);
+                    setEditingText(null);
+                }
+            };
+
+            const activeOptions = (activeLevel && optionsMap && optionsMap[currentDisplaySkill] && optionsMap[currentDisplaySkill][activeLevel]) || [];
+
+            const handleAddSkillPrompt = () => {
+                const newSkill = prompt("Enter new custom tab name (e.g. 'Analysis', 'Grammar'):");
+                if (newSkill && newSkill.trim()) {
+                    onAddSkill(newSkill.trim());
+                }
+            };
+
+            let placeholderText = `Select a ${currentDisplaySkill} comment...`;
+            if(category.id === "Homework") placeholderText = "Select a homework comment...";
+
+            return (
+                <div className="w-full">
+                    {supportsSkills && (
+                        <div className="mb-4 border-b border-gray-200 pb-2">
+                            <div className="flex flex-wrap gap-2 items-center">
+                                <span className="text-xs font-bold text-gray-400 uppercase mr-2">Tabs:</span>
+                                {skillTabs.map(skill => (
+                                    <div key={skill} className="relative group">
+                                        <button 
+                                            type="button"
+                                            onClick={() => { 
+                                                onSwitchSkill(skill); 
+                                                setActiveLevel(levels.length === 1 ? levels[0] : null);
+                                                setIsAdding(false);
+                                                setIsManaging(false);
+                                            }} 
+                                            className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${activeSkill === skill ? 'bg-school-blue text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                        >
+                                            {skill}
+                                        </button>
+                                        {skill !== "General" && activeSkill === skill && (
+                                            <button 
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); onDeleteSkill(skill); }} 
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Delete this custom tab"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                                <button type="button" onClick={handleAddSkillPrompt} className="p-1 bg-green-50 text-green-600 rounded-full hover:bg-green-100 border border-green-200" title="Add Custom Tab">
+                                    <PlusCircle className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {levels.length > 1 && (
+                        <div className="mb-4">
+                            <div className="flex flex-wrap gap-2">
+                                {levels.map((lvl) => (
+                                    <button type="button" key={lvl} onClick={() => { setActiveLevel(lvl); setIsAdding(false); setIsManaging(false); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${activeLevel === lvl ? 'bg-school-lightBlue text-white border-school-lightBlue shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                                        {lvl}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {activeLevel && (
+                        <div className="mb-2 space-y-3 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                             <div className="flex justify-between items-center border-b border-blue-200 pb-2">
+                                <span className="text-xs font-bold text-school-blue uppercase">
+                                    {supportsSkills && currentDisplaySkill !== 'General' ? `${currentDisplaySkill} ` : ''}
+                                    {levels.length > 1 ? `${activeLevel} Comments` : 'Comments'}
+                                </span>
+                                <div className="flex gap-2">
+                                    <button type="button" onClick={() => { setIsManaging(!isManaging); setIsAdding(false); }} className={`text-xs font-bold flex items-center gap-1 ${isManaging ? 'text-school-blue' : 'text-gray-500 hover:text-gray-700'}`} title="Manage Comments"><Settings className="w-3 h-3"/> Manage</button>
+                                    <button type="button" onClick={() => { setIsAdding(!isAdding); setIsManaging(false); }} className="text-xs text-school-lightBlue font-bold flex items-center gap-1 hover:underline"><PlusCircle className="w-3 h-3"/> Add New</button>
+                                </div>
+                             </div>
+
+                             {isAdding && (
+                                <div className="flex gap-2">
+                                    <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} className="flex-1 border border-blue-300 p-2 rounded text-sm bg-white outline-none focus:ring-2 focus:ring-school-lightBlue" placeholder="Type new comment..." autoFocus />
+                                    <button type="button" onClick={handleSaveNewComment} className="bg-green-600 text-white px-3 font-bold rounded text-xs hover:bg-green-700">Save</button>
+                                </div>
+                             )}
+
+                             {isManaging && (
+                                <div className="bg-white border border-blue-200 rounded-lg p-2 max-h-48 overflow-y-auto custom-scrollbar">
+                                    {activeOptions.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No comments yet.</p>}
+                                    {activeOptions.map((opt, idx) => (
+                                        <div key={idx} className="flex items-center justify-between text-xs py-2 border-b last:border-0 border-gray-100">
+                                            {editingText === opt ? (
+                                                <div className="flex-1 flex gap-2">
+                                                    <input type="text" value={editText} onChange={(e)=>setEditText(e.target.value)} className="flex-1 border p-1 rounded outline-none focus:border-school-lightBlue" />
+                                                    <button type="button" onClick={() => handleSaveEdit(opt)} className="text-green-600 hover:bg-green-50 p-1 rounded"><Save className="w-4 h-4"/></button>
+                                                    <button type="button" onClick={() => setEditingText(null)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X className="w-4 h-4"/></button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <span className="flex-1 mr-2 text-gray-700">{opt}</span>
+                                                    <div className="flex gap-1">
+                                                        <button type="button" onClick={() => { setEditingText(opt); setEditText(opt); }} className="text-blue-400 hover:text-blue-600"><Pencil className="w-4 h-4"/></button>
+                                                        <button type="button" onClick={() => { if(confirm("Delete this shared comment?")) onDeleteComment(activeLevel, opt, currentDisplaySkill); }} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                             )}
+
+                             {!isManaging && (
+                                <div className="flex gap-2 items-center">
+                                    <select 
+                                        className="flex-1 p-2 border border-blue-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-school-lightBlue outline-none cursor-pointer"
+                                        onChange={(e) => {
+                                            const newVal = e.target.value;
+                                            onChange(currentValue ? currentValue + " " + newVal : newVal, true);
+                                        }}
+                                        value="" 
+                                    >
+                                        <option value="" disabled>▼ {placeholderText}</option>
+                                        {activeOptions.length === 0 && <option disabled>No comments available</option>}
+                                        {activeOptions.map((opt, idx) => <option key={idx} value={opt}>{opt}</option>)}
+                                    </select>
+                                    
+                                    {currentValue && (
+                                        <button type="button" onClick={() => onChange("", true)} className="px-3 py-2 bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-200 transition whitespace-nowrap">
+                                            Clear Selection
+                                        </button>
+                                    )}
+                                </div>
+                             )}
+                        </div>
+                    )}
+                    
+                    {/* EDITABLE TEXT AREA */}
+                    <textarea 
+                        rows={3} 
+                        value={currentValue} 
+                        onChange={(e) => onChange(e.target.value, false)}
+                        className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-school-lightBlue outline-none transition-all shadow-sm" 
+                        placeholder={`The ${category.label} comment will build here. You can also click here to type or edit manually...`}
+                    ></textarea>
+                </div>
+            );
+        };
+
+        const StudentStep = ({ 
+            subject, student, studentIndex, totalStudents, categories, classData, optionsMapGenerator, 
+            onUpdateStudent, onAddCustomComment, onEditComment, onDeleteComment, 
+            onOpenShareModal, onSharePeriod, onDeleteAllComments, reportPeriod, onAddSkill, skillTabs, onDeleteSkill, subjectSkills
+        }) => {
+            const [activeTabId, setActiveTabId] = useState(categories[0]?.id);
+            const [activeSkills, setActiveSkills] = useState({});
+            const [copied, setCopied] = useState(false);
+            const [actionHistory, setActionHistory] = useState([]);
+
+            useEffect(() => {
+                setActiveTabId(categories[0]?.id);
+                setActionHistory([]); 
+            }, [student, categories]);
+
+            const activeCategory = categories.find(c => c.id === activeTabId) || categories[0];
+            const isSubjectShareable = ['HPL', 'Language', 'Homework'].includes(activeCategory.id);
+            const isPeriodShareable = !['HPL', 'Language'].includes(activeCategory.id); 
+            const isSkillCategory = activeCategory.id !== 'Homework';
+            const currentSkillTabs = isSkillCategory ? (subjectSkills[activeCategory.id] || ["General"]) : ["General"];
+            const levels = (activeCategory.id === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
+            const getSkill = (catId) => activeSkills[catId] || "General";
+
+            const activeComments = categories
+                .map(c => classData[student]?.[c.id]?.trim())
+                .filter(Boolean);
+
+            const handleCategoryUpdate = (catId, val, isDropdownOrClear) => {
+                if (isDropdownOrClear) {
+                    setActionHistory(prev => [...prev, { catId, oldVal: classData[student]?.[catId] || "" }]);
+                }
+                onUpdateStudent(student, catId, val);
+            };
+
+            const undoLastAction = () => {
+                if (actionHistory.length === 0) return;
+                const last = actionHistory[actionHistory.length - 1];
+                onUpdateStudent(student, last.catId, last.oldVal);
+                setActionHistory(prev => prev.slice(0, -1));
+            };
+
+            // SINGLE NEWLINE joining for copying, ensures they paste correctly to Word/Systems 
+            // without double gaps, allowing manual bulleting later.
+            const handleCopy = () => {
+                if (activeComments.length === 0) return;
+                const clipboardText = activeComments.join("\n");
+                navigator.clipboard.writeText(clipboardText).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                });
+            };
+
+            return (
+                <div className="space-y-6 animate-in">
+                    <div className="bg-school-blue text-white p-6 rounded-xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center border-l-8 border-school-lightBlue gap-4">
+                        <div>
+                            <span className="text-school-lightBlue font-bold bg-white px-3 py-1 rounded-full text-xs uppercase tracking-wide mr-3 inline-block mb-2">
+                                Student {studentIndex + 1} of {totalStudents}
+                            </span>
+                            <h2 className="text-3xl font-bold align-middle">{student}</h2>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">1. Select a category</h3>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                            {categories.map(cat => {
+                                // SAFE HAS DATA CHECK: Prevents blank screen crash
+                                const textVal = classData[student]?.[cat.id] || "";
+                                const hasData = textVal.trim().length > 0;
+                                const isActive = activeTabId === cat.id;
+                                return (
+                                    <button 
+                                        key={cat.id} 
+                                        type="button"
+                                        onClick={() => setActiveTabId(cat.id)}
+                                        className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${isActive ? 'bg-school-lightBlue text-white shadow-md ring-2 ring-school-lightBlue ring-offset-2' : (hasData ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}`}
+                                    >
+                                        {cat.label}
+                                        {hasData && <CheckCircle className="w-4 h-4" />}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-4">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-school-lightBlue" /> Editing: {activeCategory.label}
+                            </h3>
+                            
+                            <div className="flex gap-2">
+                                <button type="button" onClick={() => onDeleteAllComments(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-red-600 text-xs font-bold rounded border border-gray-200 hover:bg-red-50 hover:border-red-200 transition shadow-sm" title={`Clear all ${activeCategory.label} comments for ${subject}`}>
+                                    <Trash2 className="w-3 h-3"/> Clear Bank
+                                </button>
+
+                                {isSubjectShareable && (
+                                    <button type="button" onClick={() => onOpenShareModal(activeCategory.id)} className="flex items-center gap-1 px-3 py-1.5 bg-white text-purple-700 text-xs font-bold rounded border border-gray-200 hover:bg-purple-50 hover:border-purple-200 transition shadow-sm">
+                                        <Globe className="w-3 h-3"/> Share w/ Subjects
+                                    </button>
+                                )}
+
+                                {isPeriodShareable && reportPeriod === "Progress 2" && (
+                                    <button type="button" onClick={() => onSharePeriod(activeCategory.id, "Progress 3")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
+                                        <Share className="w-3 h-3"/> Share P2 ➔ P3
+                                    </button>
+                                )}
+
+                                {isPeriodShareable && reportPeriod === "Progress 3" && (
+                                    <button type="button" onClick={() => onSharePeriod(activeCategory.id, "Progress 2")} className="flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 text-xs font-bold rounded border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition shadow-sm">
+                                        <Share className="w-3 h-3"/> Share P3 ➔ P2
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <div className="p-6">
+                            <CommentCategory 
+                                key={`${student}-${activeCategory.id}`}
+                                category={activeCategory} 
+                                optionsMap={optionsMapGenerator(activeCategory.id)} 
+                                currentValue={classData[student]?.[activeCategory.id] || ""} 
+                                onChange={(val, isDropdown) => handleCategoryUpdate(activeCategory.id, val, isDropdown)} 
+                                onAddComment={(level, text, skill) => onAddCustomComment(activeCategory.id, level, text, skill)} 
+                                onEditComment={(level, oldText, newText, skill) => onEditComment(activeCategory.id, level, oldText, newText, skill)}
+                                onDeleteComment={(level, text, skill) => onDeleteComment(activeCategory.id, level, text, skill)}
+                                levels={levels}
+                                onAddSkill={(skill) => onAddSkill(activeCategory.id, skill)}
+                                onDeleteSkill={(skill) => onDeleteSkill(activeCategory.id, skill)}
+                                skillTabs={currentSkillTabs}
+                                activeSkill={getSkill(activeCategory.id)}
+                                onSwitchSkill={(skill) => setActiveSkills(prev => ({...prev, [activeCategory.id]: skill}))}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-blue-50 border border-school-lightBlue/30 rounded-xl p-5 shadow-inner mt-4">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-xs font-bold text-school-blue uppercase tracking-wider flex items-center gap-2">
+                                <span>Final Report Preview for {student}</span>
+                            </h3>
+                            <div className="flex gap-2">
+                                {actionHistory.length > 0 && (
+                                    <button 
+                                        type="button"
+                                        onClick={undoLastAction} 
+                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded shadow-sm transition-colors border bg-white text-orange-600 border-orange-200 hover:bg-orange-50"
+                                    >
+                                        <RotateCcw className="w-3 h-3" /> Undo Last Addition
+                                    </button>
+                                )}
+                                {activeComments.length > 0 && (
+                                    <button 
+                                        type="button"
+                                        onClick={handleCopy} 
+                                        className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded shadow-sm transition-colors border ${copied ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white text-school-lightBlue border-blue-200 hover:bg-blue-100'}`}
+                                    >
+                                        {copied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                        {copied ? "Copied!" : "Copy Report"}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        <div className="bg-white p-4 rounded-lg border border-blue-100 text-gray-800 text-sm leading-relaxed shadow-sm">
+                            {activeComments.length > 0 ? (
+                                <div className="flex flex-col gap-3">
+                                    {activeComments.map((comment, idx) => (
+                                        <p key={idx} className="m-0">{comment}</p>
+                                    ))}
+                                </div>
+                            ) : (
+                                <span className="text-gray-400 italic">Comments will appear here as you select them...</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ResultPanel = ({ prompt }) => {
+            const handleDownload = () => {
+                const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Class Reports</title></head><body>";
+                const footer = "</body></html>";
+                // Convert single newlines to HTML line breaks for word document so they format clearly
+                const htmlContent = prompt.replace(/\n/g, "<br>");
+                const sourceHTML = header + htmlContent + footer;
+                const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+                const fileDownload = document.createElement("a");
+                document.body.appendChild(fileDownload);
+                fileDownload.href = source;
+                fileDownload.download = 'Class_Reports.doc';
+                fileDownload.click();
+                document.body.removeChild(fileDownload);
+            };
+            return (
+                <div className="mt-8 bg-white rounded-xl shadow-xl overflow-hidden border border-gray-200">
+                    <div className="p-4 border-b bg-gray-50 font-bold text-gray-700 flex justify-between items-center">
+                        <span>Generated Class Report Document</span>
+                        <div className="flex gap-2">
+                            <button type="button" onClick={handleDownload} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs font-bold"><Download className="w-4 h-4" /> Download as Word Doc</button>
+                        </div>
+                    </div>
+                    <textarea readOnly value={prompt} className="w-full min-h-[500px] p-6 bg-gray-50 resize-y font-mono text-sm border-none" />
+                </div>
+            );
+        };
+
+        const ActionPanel = ({ onBack, onNext, onReturnStart, isLastStep, disableNext }) => (
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+                <div className="max-w-5xl mx-auto flex justify-between gap-4">
+                    <div className="flex gap-2">
+                        <button type="button" onClick={onReturnStart} className="flex items-center gap-2 px-4 py-3 rounded-lg font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors text-sm"><RotateCcw className="w-4 h-4" /> Start Over</button>
+                        <button type="button" onClick={onBack} className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition-colors"><ArrowLeft className="w-5 h-5" /> Back</button>
+                    </div>
+                    <button 
+                        type="button"
+                        onClick={onNext} 
+                        disabled={disableNext}
+                        className={`flex items-center gap-2 px-8 py-3 rounded-lg font-bold text-white shadow-md transition-all ${disableNext ? 'bg-gray-400 cursor-not-allowed' : (isLastStep ? 'bg-green-600 hover:bg-green-700' : 'bg-school-lightBlue hover:bg-school-blue')}`}
+                    >
+                        {disableNext ? <><X className="w-5 h-5"/> Complete All Categories</> : (isLastStep ? <><CheckCircle className="w-5 h-5" /> Finish & Generate</> : <><ArrowRight className="w-5 h-5" /> Next Student</>)}
+                    </button>
+                </div>
+            </div>
+        );
+
+        const App = () => {
+            const [customSubjects, setCustomSubjects] = useState([]);
+            const [deletedSubjects, setDeletedSubjects] = useState([]);
+            const [subjectTypes, setSubjectTypes] = useState({});
+            const [mockTitles, setMockTitles] = useState({});
+            const [customBank, setCustomBank] = useState({});
+            const [isConnected, setIsConnected] = useState(false);
+            const [sharedLogo, setSharedLogo] = useState(null);
+            const [subjectDepartments, setSubjectDepartments] = useState({});
+            const [departments, setDepartments] = useState(["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"]);
+            const [subjectSkills, setSubjectSkills] = useState({});
+
+            const [subject, setSubject] = useState("");
+            const [department, setDepartment] = useState("");
+            const [students, setStudents] = useState([]);
+            const [currentStepIndex, setCurrentStepIndex] = useState(0);
+            const [reportPeriod, setReportPeriod] = useState("Progress 2");
+            const [classData, setClassData] = useState({});
+            const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
+            const [activeCategories, setActiveCategories] = useState([]);
+            
+            // Modal state
+            const [shareModalData, setShareModalData] = useState(null);
+
+            useEffect(() => {
+                const unsubscribe = SHARED_DOC_REF.onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        setCustomSubjects(data.customSubjects || []);
+                        setDeletedSubjects(data.deletedSubjects || []);
+                        setSubjectTypes(data.subjectTypes || {});
+                        setMockTitles(data.mockTitles || {});
+                        setCustomBank(data.customBank || {});
+                        setSubjectDepartments(data.subjectDepartments || {});
+                        if(data.departments) setDepartments(data.departments);
+                        if(data.subjectSkills) setSubjectSkills(data.subjectSkills);
+                        if(data.logo) setSharedLogo(data.logo);
+                        setIsConnected(true);
+                    } else {
+                        // FIX FOR EMPTY DB WIPE: Ensure we don't accidentally overwrite if network fails
+                        SHARED_DOC_REF.get({ source: 'server' }).then(dbDoc => {
+                            if (!dbDoc.exists) {
+                                SHARED_DOC_REF.set({
+                                    customSubjects: Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), 
+                                    deletedSubjects: [],
+                                    subjectTypes: {}, 
+                                    mockTitles: {}, 
+                                    customBank: DEFAULT_COMMENT_BANK,
+                                    subjectDepartments: DEFAULT_SUBJECT_DEPARTMENTS, 
+                                    subjectSkills: {},
+                                    departments: ["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"],
+                                    logo: null
+                                }, { merge: true });
+                            }
+                        }).catch(console.error);
+                        setIsConnected(true);
+                    }
+                }, (err) => {
+                    console.error("Firebase Sync Error:", err);
+                    setIsConnected(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            const updateCloud = (key, value) => {
+                SHARED_DOC_REF.set({ [key]: value }, { merge: true }).catch(console.error);
+            };
+
+            const handleAddSubject = (newSubject, type, dept) => {
+                let updatedSubjects = [...customSubjects];
+                if (!updatedSubjects.includes(newSubject)) {
+                    updatedSubjects.push(newSubject);
+                }
+
+                // If it was previously deleted, remove it from the deleted list so it comes back clean
+                let updatedDeleted = deletedSubjects.filter(s => s !== newSubject);
+
+                const updatedTypes = { ...subjectTypes, [newSubject]: type };
+                const updatedDepts = { ...subjectDepartments, [newSubject]: dept };
+
+                let newBank = { ...customBank };
+                const sharedKey = `${newSubject}::SHARED`;
+                if (!newBank[sharedKey]) {
+                     newBank[sharedKey] = {
+                        "HPL": { "Comments": {"General": []} },
+                        "Language": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} },
+                        "Assessment": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} },
+                        "Homework": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} },
+                        "Improvement": { "Excellent": {"General": []}, "Good": {"General": []}, "Average": {"General": []}, "Poor": {"General": []} }
+                     };
+                }
+                
+                // Optimistic UI Updates
+                setCustomSubjects(updatedSubjects);
+                setDeletedSubjects(updatedDeleted);
+                setSubjectTypes(updatedTypes);
+                setSubjectDepartments(updatedDepts);
+                setCustomBank(newBank);
+                setSubject(newSubject);
+
+                SHARED_DOC_REF.set({
+                    customSubjects: updatedSubjects,
+                    deletedSubjects: updatedDeleted,
+                    subjectTypes: updatedTypes,
+                    subjectDepartments: updatedDepts,
+                    customBank: newBank
+                }, { merge: true }).catch(console.error);
+            };
+
+            const handleDeleteSubject = () => {
+                if (!subject || subject === "__NEW__") return;
+                if (confirm(`⚠️ Are you sure you want to PERMANENTLY delete the subject "${subject}"?`)) {
+                    const updatedSubjects = customSubjects.filter(s => s !== subject);
+                    
+                    const newDeleted = [...deletedSubjects];
+                    if (!newDeleted.includes(subject)) newDeleted.push(subject);
+
+                    const updatedTypes = { ...subjectTypes }; delete updatedTypes[subject];
+                    const updatedMockTitles = { ...mockTitles }; delete updatedMockTitles[subject];
+                    const updatedDepts = { ...subjectDepartments }; delete updatedDepts[subject];
+                    const updatedSkills = { ...subjectSkills }; delete updatedSkills[subject];
+                    
+                    const updatedBank = { ...customBank };
+                    Object.keys(updatedBank).forEach(key => {
+                        if (key.startsWith(`${subject}::`)) {
+                            delete updatedBank[key];
+                        }
+                    });
+
+                    // Optimistic UI Updates
+                    setCustomSubjects(updatedSubjects);
+                    setDeletedSubjects(newDeleted);
+                    setSubjectTypes(updatedTypes);
+                    setMockTitles(updatedMockTitles);
+                    setSubjectDepartments(updatedDepts);
+                    setSubjectSkills(updatedSkills);
+                    setCustomBank(updatedBank);
+                    setSubject("");
+
+                    SHARED_DOC_REF.set({ 
+                        customSubjects: updatedSubjects, 
+                        deletedSubjects: newDeleted,
+                        subjectTypes: updatedTypes, 
+                        mockTitles: updatedMockTitles, 
+                        subjectDepartments: updatedDepts, 
+                        subjectSkills: updatedSkills,
+                        customBank: updatedBank 
+                    }, { merge: true }).then(() => { alert("Subject deleted."); }).catch(console.error);
+                }
+            };
+            
+            const handleAddDepartment = (newDept) => {
+                if (!departments.includes(newDept)) {
+                    const newDepts = [...departments, newDept];
+                    // Optimistic UI updates
+                    setDepartments(newDepts);
+                    setDepartment(newDept);
+                    
+                    SHARED_DOC_REF.set({ departments: newDepts }, { merge: true }).catch(console.error);
+                }
+            };
+
+            const handleDeleteDepartment = (deptToDelete) => {
+                 if (confirm(`⚠️ DANGER: Delete department "${deptToDelete}"?\n\nThis will PERMANENTLY DELETE ALL SUBJECTS and comments inside this department.`)) {
+                    const newDepts = departments.filter(d => d !== deptToDelete);
+                    
+                    let updatedSubjects = [...customSubjects];
+                    let newDeleted = [...deletedSubjects];
+                    let updatedTypes = { ...subjectTypes };
+                    let updatedMockTitles = { ...mockTitles };
+                    let updatedDepts = { ...subjectDepartments };
+                    let updatedSkills = { ...subjectSkills };
+                    let updatedBank = { ...customBank };
+
+                    // Get all subjects mapped to this department, including default ones
+                    const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]));
+                    const subjectsInDept = allSubjectsList.filter(s => (subjectDepartments[s] || "Other") === deptToDelete);
+
+                    subjectsInDept.forEach(subj => {
+                        updatedSubjects = updatedSubjects.filter(s => s !== subj);
+                        if (!newDeleted.includes(subj)) newDeleted.push(subj);
+                        delete updatedTypes[subj];
+                        delete updatedMockTitles[subj];
+                        delete updatedDepts[subj];
+                        delete updatedSkills[subj];
+                        Object.keys(updatedBank).forEach(key => {
+                            if (key.startsWith(`${subj}::`)) {
+                                delete updatedBank[key];
+                            }
+                        });
+                    });
+
+                    // Optimistic updates
+                    setDepartments(newDepts);
+                    setCustomSubjects(updatedSubjects);
+                    setDeletedSubjects(newDeleted);
+                    setSubjectTypes(updatedTypes);
+                    setMockTitles(updatedMockTitles);
+                    setSubjectDepartments(updatedDepts);
+                    setSubjectSkills(updatedSkills);
+                    setCustomBank(updatedBank);
+                    
+                    if(department === deptToDelete) {
+                        setDepartment("");
+                        setSubject("");
+                    }
+
+                    SHARED_DOC_REF.set({ 
+                        departments: newDepts,
+                        customSubjects: updatedSubjects,
+                        deletedSubjects: newDeleted,
+                        subjectTypes: updatedTypes,
+                        mockTitles: updatedMockTitles,
+                        subjectDepartments: updatedDepts,
+                        subjectSkills: updatedSkills,
+                        customBank: updatedBank
+                    }, { merge: true }).catch(console.error);
+                 }
+            };
+
+            const handleUpdateMockTitle = (idx, val) => {
+                const current = mockTitles[subject] || ["", "", "", "", ""];
+                current[idx] = val;
+                updateCloud('mockTitles', { ...mockTitles, [subject]: current });
+            };
+
+            const getSourceKeyLogic = (cId, subj) => (cId === 'HPL' || cId === 'Language') ? `${subj}::SHARED` : `${subj}::${reportPeriod}`;
+            const getBankKey = (catId) => getSourceKeyLogic(catId, subject);
+
+            const handleAddCustomComment = (catId, level, text, skill = "General") => {
+                const key = getBankKey(catId);
+                const newBank = JSON.parse(JSON.stringify(customBank));
+                
+                if (!newBank[key]) newBank[key] = {};
+                if (!newBank[key][catId]) newBank[key][catId] = {};
+                if (!newBank[key][catId][level]) newBank[key][catId][level] = {};
+                if (!newBank[key][catId][level][skill]) newBank[key][catId][level][skill] = [];
+
+                if (!newBank[key][catId][level][skill].includes(text)) {
+                    newBank[key][catId][level][skill].push(text);
+                    updateCloud('customBank', newBank);
+                }
+            };
+
+            const handleEditComment = (catId, level, oldText, newText, skill = "General") => {
+                const key = getBankKey(catId);
+                const newBank = JSON.parse(JSON.stringify(customBank));
+                const comments = newBank[key]?.[catId]?.[level]?.[skill] || [];
+                const idx = comments.indexOf(oldText);
+                if (idx > -1) {
+                    comments[idx] = newText;
+                    updateCloud('customBank', newBank);
+                }
+            };
+
+            const handleDeleteComment = (catId, level, text, skill = "General", isSkillDeletion = false) => {
+                const key = getBankKey(catId);
+                const newBank = JSON.parse(JSON.stringify(customBank));
+
+                if (isSkillDeletion) {
+                    if (confirm(`Are you sure you want to delete the skill "${skill}" permanently?`)) {
+                        const currentSkills = subjectSkills[subject] || {};
+                        const catSkills = currentSkills[catId] || ["General"];
+                        const newCatSkills = catSkills.filter(s => s !== skill);
+                        
+                        const updatedSubjectSkills = { ...subjectSkills, [subject]: { ...currentSkills, [catId]: newCatSkills } };
+                        updateCloud('subjectSkills', updatedSubjectSkills);
+                    }
+                } else {
+                    const comments = newBank[key]?.[catId]?.[level]?.[skill] || [];
+                    newBank[key][catId][level][skill] = comments.filter(c => c !== text);
+                    updateCloud('customBank', newBank);
+                }
+            };
+
+            const handleAddSkill = (catId, newSkill) => {
+                if (catId === 'Homework') return; 
+
+                const currentSkills = subjectSkills[subject] || {};
+                const catSkills = currentSkills[catId] || ["General"];
+                
+                if(!catSkills.includes(newSkill)) {
+                    const newCatSkills = [...catSkills, newSkill];
+                    const updatedSubjectSkills = { ...subjectSkills, [subject]: { ...currentSkills, [catId]: newCatSkills } };
+                    updateCloud('subjectSkills', updatedSubjectSkills);
+                }
+            };
+
+            const handleDeleteSkill = (catId, skillToDelete) => {
+                if (catId === 'Homework') return;
+                const currentSkills = subjectSkills[subject] || {};
+                const catSkills = currentSkills[catId] || ["General"];
+                const newCatSkills = catSkills.filter(s => s !== skillToDelete);
+                const updatedSubjectSkills = { ...subjectSkills, [subject]: { ...currentSkills, [catId]: newCatSkills } };
+                updateCloud('subjectSkills', updatedSubjectSkills);
+            };
+
+            const handleShareToSubjects = (catId, targetSubjects) => {
+                const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
+                const sourceKeyLocal = getSourceKeyLogic(catId, subject);
+                const sourceCategoryData = customBank[sourceKeyLocal]?.[catId]; 
+                
+                if (!sourceCategoryData) {
+                    alert("No comments to share.");
+                    return;
+                }
+
+                const newBank = JSON.parse(JSON.stringify(customBank));
+                const newSubjectSkills = JSON.parse(JSON.stringify(subjectSkills));
+                const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
+                const currentCatSkills = subjectSkills[subject]?.[catId] || ["General"];
+
+                targetSubjects.forEach(targetSubj => {
+                    const targetKey = getSourceKeyLogic(catId, targetSubj);
+                    if (!newBank[targetKey]) newBank[targetKey] = {};
+                    if (!newBank[targetKey][catId]) newBank[targetKey][catId] = {};
+
+                    let targetSubjectSkillsObj = newSubjectSkills[targetSubj] || {};
+                    let targetCatSkills = targetSubjectSkillsObj[catId] || ["General"];
+                    targetSubjectSkillsObj[catId] = Array.from(new Set([...targetCatSkills, ...currentCatSkills]));
+                    newSubjectSkills[targetSubj] = targetSubjectSkillsObj;
+
+                    levels.forEach(lvl => {
+                        const sourceLevelObj = sourceCategoryData[lvl] || {};
+                        Object.keys(sourceLevelObj).forEach(skillName => {
+                             const sourceComments = sourceLevelObj[skillName] || [];
+                             if (sourceComments.length > 0) {
+                                if (!newBank[targetKey][catId][lvl]) newBank[targetKey][catId][lvl] = {};
+                                if (!newBank[targetKey][catId][lvl][skillName]) newBank[targetKey][catId][lvl][skillName] = [];
+                                
+                                const existing = newBank[targetKey][catId][lvl][skillName] || [];
+                                newBank[targetKey][catId][lvl][skillName] = Array.from(new Set([...existing, ...sourceComments]));
+                             }
+                        });
+                    });
+                });
+
+                SHARED_DOC_REF.set({
+                    customBank: newBank,
+                    subjectSkills: newSubjectSkills
+                }, { merge: true }).then(() => {
+                    alert(`Successfully updated ${displayCat} comments and tabs across ${targetSubjects.length} subjects!`);
+                    setShareModalData(null);
+                }).catch(console.error);
+            };
+
+            const handleSharePeriod = (catId, targetPeriod) => {
+                const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
+                const sourcePeriod = reportPeriod;
+                if (!confirm(`⚠️ WARNING: You are about to share ${displayCat} comments from ${sourcePeriod} to ${targetPeriod}.\n\nThis will DELETE and REPLACE all existing ${displayCat} comments in ${targetPeriod}.\n\nAre you sure?`)) return;
+
+                const sourceKey = `${subject}::${sourcePeriod}`;
+                const targetKey = `${subject}::${targetPeriod}`;
+                const sourceData = customBank[sourceKey]?.[catId];
+
+                if (!sourceData) return alert("No comments to share.");
+
+                const newBank = JSON.parse(JSON.stringify(customBank));
+                if (!newBank[targetKey]) newBank[targetKey] = {};
+                
+                // OVERWRITE LOGIC
+                newBank[targetKey][catId] = JSON.parse(JSON.stringify(sourceData));
+
+                updateCloud('customBank', newBank);
+                alert(`Successfully overwrote ${targetPeriod} comments with ${sourcePeriod} data!`);
+            };
+
+            const handleDeleteAllInCategory = (catId) => {
+                const displayCat = catId === 'HPL' ? 'Approaches to Learning' : catId;
+                const isSharedCat = catId === 'HPL' || catId === 'Language';
+                const targetPeriod = isSharedCat ? 'Shared Bank' : reportPeriod;
+                
+                if (!confirm(`⚠️ Are you sure you want to DELETE ALL comments for ${displayCat} in ${targetPeriod} for ${subject} ONLY?\n\nThis will NOT delete comments in other subjects.`)) return;
+
+                const key = isSharedCat ? `${subject}::SHARED` : `${subject}::${reportPeriod}`;
+                const newBank = JSON.parse(JSON.stringify(customBank));
+
+                if (newBank[key] && newBank[key][catId]) {
+                    delete newBank[key][catId]; 
+                    updateCloud('customBank', newBank);
+                    alert(`All comments in the ${displayCat} category for ${subject} have been deleted.`);
+                } else {
+                    alert(`No comments found to delete in ${displayCat} for ${subject}.`);
+                }
+            };
+
+            const handleStartClass = (names, categories) => {
+                setStudents(names);
+                setActiveCategories(categories);
+                const initData = {};
+                names.forEach(n => initData[n] = {});
+                setClassData(initData);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const getOptionsMap = (catId) => {
+                const key = getBankKey(catId);
+                const levels = (catId === 'HPL') ? HPL_LEVELS : STANDARD_LEVELS;
+                const map = {};
+                
+                const mySkills = (subjectSkills[subject]?.[catId]) || ["General"];
+
+                mySkills.forEach(skill => {
+                    map[skill] = {};
+                    levels.forEach(l => {
+                        let customs = [];
+                        const levelData = customBank[key]?.[catId]?.[l];
+                        
+                        if (Array.isArray(levelData)) {
+                            if (skill === "General") customs = levelData; 
+                        } else if (levelData && typeof levelData === 'object') {
+                            customs = levelData[skill] || [];
+                        }
+
+                        let defaults = [];
+                        if (skill === "General") {
+                             defaults = DEFAULT_COMMENT_BANK[subject]?.[catId]?.[l] || [];
+                        }
+
+                        map[skill][l] = Array.from(new Set([...defaults, ...customs]));
+                    });
+                });
+                return map;
+            };
+
+            const handleUpdateStudent = (name, catId, val) => {
+                setClassData(prev => ({ ...prev, [name]: { ...prev[name], [catId]: val } }));
+            };
+
+            const generateFinalBatch = () => {
+                let out = "";
+                students.forEach((s, index) => {
+                    out += `${s}\n`;
+                    const comments = activeCategories
+                        .map(c => {
+                            const textVal = classData[s]?.[c.id] || "";
+                            return textVal.trim();
+                        })
+                        .filter(Boolean);
+                        
+                    if (comments.length > 0) {
+                        // SINGLE NEWLINE ensures comments do not have huge gaps when downloading word doc. 
+                        out += comments.join("\n") + "\n";
+                    }
+                    
+                    if (index < students.length - 1) {
+                        out += `\n-----------------------------------\n\n`;
+                    }
+                });
+                setFinalBatchPrompt(out);
+            };
+
+            const isSetup = students.length === 0;
+            const isResultStep = !isSetup && currentStepIndex === students.length;
+            const activeStudent = (!isSetup && !isResultStep) ? students[currentStepIndex] : null;
+            
+            const isCurrentStudentComplete = activeStudent ? activeCategories.every(c => {
+                const textVal = classData[activeStudent]?.[c.id] || "";
+                return textVal.trim().length > 0;
+            }) : true;
+
+            // Compute valid active subjects (removes permanently deleted ones)
+            const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]))
+                .filter(s => !deletedSubjects.includes(s));
+
+            return (
+                <div className="min-h-screen bg-gray-50 pb-32">
+                    <Header isConnected={isConnected} logo={sharedLogo} onLogoUpdate={(l) => updateCloud('logo', l)} />
+                    <main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
+                        {isSetup && (
+                            <ClassSetup
+                                subject={subject} setSubject={setSubject}
+                                subjectOptions={allSubjectsList}
+                                department={department} setDepartment={setDepartment}
+                                departments={departments}
+                                subjectDepartments={subjectDepartments}
+                                onStartClass={handleStartClass}
+                                onAddSubject={handleAddSubject}
+                                reportPeriod={reportPeriod} setReportPeriod={setReportPeriod}
+                                subjectTypes={subjectTypes}
+                                mockTitles={mockTitles[subject] || ["", "", "", "", ""]}
+                                onUpdateMockTitle={handleUpdateMockTitle}
+                                onDeleteSubject={handleDeleteSubject}
+                                onDeleteDepartment={handleDeleteDepartment}
+                                onAddDepartment={handleAddDepartment}
+                            />
+                        )}
+
+                        {activeStudent && (
+                            <StudentStep
+                                key={activeStudent}
+                                subject={subject}
+                                student={activeStudent}
+                                studentIndex={currentStepIndex}
+                                totalStudents={students.length}
+                                categories={activeCategories}
+                                classData={classData}
+                                optionsMapGenerator={getOptionsMap}
+                                onUpdateStudent={handleUpdateStudent}
+                                onAddCustomComment={handleAddCustomComment}
+                                onEditComment={handleEditComment}
+                                onDeleteComment={handleDeleteComment}
+                                onOpenShareModal={(catId) => setShareModalData({ catId })}
+                                onSharePeriod={handleSharePeriod}
+                                onDeleteAllComments={handleDeleteAllInCategory}
+                                reportPeriod={reportPeriod}
+                                onAddSkill={handleAddSkill}
+                                onDeleteSkill={handleDeleteSkill}
+                                subjectSkills={subjectSkills[subject] || {}}
+                            />
+                        )}
+
+                        {isResultStep && (
+                            <div className="animate-in">
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6 text-center">
+                                    <h2 className="text-2xl font-bold text-green-800">Class Reports Generated!</h2>
+                                </div>
+                                <ResultPanel prompt={finalBatchPrompt} />
+                                <div className="mt-8 text-center">
+                                    <button type="button" onClick={() => window.location.reload()} className="text-gray-500 hover:text-gray-700 underline">Start Over</button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {!isSetup && !isResultStep && (
+                        <ActionPanel
+                            onBack={() => setCurrentStepIndex(currentStepIndex - 1)}
+                            onReturnStart={() => {
+                                if(confirm("Return to start? Current student progress will be lost.")) {
+                                    setStudents([]);
+                                    setSubject("");
+                                    setCurrentStepIndex(0);
+                                    setClassData({});
+                                }
+                            }}
+                            onNext={() => {
+                                if (currentStepIndex === students.length - 1) generateFinalBatch();
+                                setCurrentStepIndex(currentStepIndex + 1);
+                                window.scrollTo(0,0);
+                            }}
+                            isLastStep={currentStepIndex === students.length - 1}
+                            disableNext={!isCurrentStudentComplete}
+                        />
+                    )}
+
+                    {/* SHARE OVERLAY MODAL */}
+                    {shareModalData && (
+                        <ShareModal 
+                            catId={shareModalData.catId}
+                            currentSubject={subject}
+                            allSubjects={allSubjectsList}
+                            subjectDepartments={subjectDepartments}
+                            departments={departments}
+                            onClose={() => setShareModalData(null)}
+                            onConfirm={(selected) => handleShareToSubjects(shareModalData.catId, selected)}
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
