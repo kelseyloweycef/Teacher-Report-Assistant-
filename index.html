@@ -90,8 +90,6 @@
         const Briefcase = ({ className }) => <Icon className={className} path={<><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></>} />;
         const FileText = ({ className }) => <Icon className={className} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></>} />;
         const Copy = ({ className }) => <Icon className={className} path={<><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></>} />;
-        const ChevronDown = ({ className }) => <Icon className={className} path={<><polyline points="6 9 12 15 18 9"/></>} />;
-        const ChevronUp = ({ className }) => <Icon className={className} path={<><polyline points="18 15 12 9 6 15"/></>} />;
 
         const DEFAULT_COMMENT_BANK = {
             "IB History": {
@@ -114,7 +112,7 @@
 
         const ShareModal = ({ catId, currentSubject, allSubjects, subjectDepartments, departments, onClose, onConfirm }) => {
             const [selected, setSelected] = useState([]);
-            const [expandedDepts, setExpandedDepts] = useState([]);
+            const [selectedDept, setSelectedDept] = useState("");
             
             // Only allow sharing with valid active subjects
             const availableSubjects = allSubjects.filter(s => s !== currentSubject);
@@ -128,37 +126,30 @@
                 subjectsByDept[dept].push(s);
             });
 
-            // Show ALL active departments, even if empty, so users know they exist
+            // Show ALL active departments, even if empty
             const validDepartments = [...departments].sort();
 
+            // Default to expanding the current subject's department
             useEffect(() => {
                 const currentDept = subjectDepartments[currentSubject] || "Other";
                 if (validDepartments.includes(currentDept)) {
-                    setExpandedDepts([currentDept]);
+                    setSelectedDept(currentDept);
                 } else if (validDepartments.length > 0) {
-                    setExpandedDepts([validDepartments[0]]);
+                    setSelectedDept(validDepartments[0]);
                 }
             }, [currentSubject, subjectDepartments, validDepartments]);
 
-            const toggleDeptExpand = (dept) => {
-                if (expandedDepts.includes(dept)) {
-                    setExpandedDepts(expandedDepts.filter(d => d !== dept));
-                } else {
-                    setExpandedDepts([...expandedDepts, dept]);
-                }
-            };
+            const displayedSubjects = selectedDept ? (subjectsByDept[selectedDept] || []) : [];
+            const isAllDisplayedSelected = displayedSubjects.length > 0 && displayedSubjects.every(s => selected.includes(s));
 
-            const toggleDeptSelection = (dept) => {
-                const deptSubjects = subjectsByDept[dept] || [];
-                if (deptSubjects.length === 0) return;
-
-                const allSelectedInDept = deptSubjects.every(s => selected.includes(s));
-                
-                if (allSelectedInDept) {
-                    setSelected(selected.filter(s => !deptSubjects.includes(s)));
+            const toggleDeptSelection = () => {
+                if (isAllDisplayedSelected) {
+                    // Deselect all in this specific dept view
+                    setSelected(selected.filter(s => !displayedSubjects.includes(s)));
                 } else {
+                    // Select all in this specific dept view
                     const newSelected = [...selected];
-                    deptSubjects.forEach(s => {
+                    displayedSubjects.forEach(s => {
                         if (!newSelected.includes(s)) newSelected.push(s);
                     });
                     setSelected(newSelected);
@@ -183,59 +174,57 @@
                         <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
                             <p className="text-sm text-gray-600 mb-6">Select the subjects below to share your current <strong>{displayCat}</strong> comments and custom tabs with.</p>
                             
-                            <div className="space-y-4">
-                                {validDepartments.map(dept => {
-                                    const deptSubjects = subjectsByDept[dept] || [];
-                                    const isExpanded = expandedDepts.includes(dept);
-                                    const allSelected = deptSubjects.length > 0 && deptSubjects.every(s => selected.includes(s));
-                                    
-                                    return (
-                                        <div key={dept} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                                            <div 
-                                                className={`p-3 flex justify-between items-center cursor-pointer transition-colors ${isExpanded ? 'bg-blue-50 border-b border-blue-100' : 'bg-gray-50 hover:bg-gray-100'}`}
-                                                onClick={() => toggleDeptExpand(dept)}
-                                            >
-                                                <h3 className="font-bold text-school-blue flex items-center gap-2">
-                                                    <Briefcase className="w-4 h-4 text-school-lightBlue" /> {dept}
-                                                    <span className="text-xs font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border">
-                                                        {deptSubjects.filter(s => selected.includes(s)).length} / {deptSubjects.length}
-                                                    </span>
-                                                </h3>
-                                                {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+                            {validDepartments.length === 0 ? (
+                                <p className="text-sm text-red-500 italic">No other subjects exist to share with.</p>
+                            ) : (
+                                <>
+                                    <div className="mb-6">
+                                        <label className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
+                                            <Briefcase className="w-4 h-4"/> 1. Choose Department
+                                        </label>
+                                        <select 
+                                            value={selectedDept} 
+                                            onChange={e => setSelectedDept(e.target.value)}
+                                            className="w-full p-3 border border-school-lightBlue rounded-lg outline-none focus:ring-2 focus:ring-school-lightBlue text-sm font-medium bg-white cursor-pointer shadow-sm"
+                                        >
+                                            {validDepartments.map(d => (
+                                                <option key={d} value={d}>{d}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {selectedDept && (
+                                        <div className="animate-in">
+                                            <div className="mb-3 flex justify-between items-end border-b pb-2">
+                                                <label className="text-xs font-bold text-gray-500 uppercase">2. Select Subjects</label>
+                                                {displayedSubjects.length > 0 && (
+                                                    <button type="button" onClick={toggleDeptSelection} className="text-xs font-bold text-school-lightBlue hover:underline">
+                                                        {isAllDisplayedSelected ? "Deselect All in Department" : "Select All in Department"}
+                                                    </button>
+                                                )}
                                             </div>
-                                            
-                                            {isExpanded && (
-                                                <div className="p-3 bg-white space-y-2">
-                                                    {deptSubjects.length === 0 ? (
-                                                        <p className="text-xs text-gray-400 italic py-1">No other subjects in this department.</p>
-                                                    ) : (
-                                                        <>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => toggleDeptSelection(dept)}
-                                                                className="text-xs font-bold text-school-lightBlue hover:underline mb-2 block"
-                                                            >
-                                                                {allSelected ? "Deselect All in Department" : "Select All in Department"}
-                                                            </button>
-                                                            {deptSubjects.map(s => (
-                                                                <label key={s} className={`flex items-center gap-3 p-2 border rounded-md cursor-pointer transition-colors ${selected.includes(s) ? 'bg-blue-50 border-school-lightBlue' : 'bg-white hover:bg-gray-50'}`}>
-                                                                    <input type="checkbox" checked={selected.includes(s)} onChange={() => toggleSubject(s)} className="w-4 h-4 text-school-lightBlue rounded focus:ring-school-lightBlue" />
-                                                                    <span className={`font-medium text-sm ${selected.includes(s) ? 'text-school-blue' : 'text-gray-700'}`}>{s}</span>
-                                                                </label>
-                                                            ))}
-                                                        </>
-                                                    )}
-                                                </div>
-                                            )}
+
+                                            <div className="space-y-2">
+                                                {displayedSubjects.length === 0 ? (
+                                                    <p className="text-sm text-gray-400 italic py-2">No other subjects found in this department.</p>
+                                                ) : (
+                                                    displayedSubjects.map(s => (
+                                                        <label key={s} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors shadow-sm ${selected.includes(s) ? 'bg-blue-50 border-school-lightBlue' : 'bg-white hover:bg-gray-50'}`}>
+                                                            <input type="checkbox" checked={selected.includes(s)} onChange={() => toggleSubject(s)} className="w-5 h-5 text-school-lightBlue rounded focus:ring-school-lightBlue" />
+                                                            <span className={`font-medium text-sm ${selected.includes(s) ? 'text-school-blue' : 'text-gray-700'}`}>{s}</span>
+                                                        </label>
+                                                    ))
+                                                )}
+                                            </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                    )}
+                                </>
+                            )}
                         </div>
 
                         <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
                             <span className="text-sm font-bold text-school-blue bg-blue-100 px-3 py-1 rounded-full border border-blue-200">
-                                {selected.length} Selected
+                                {selected.length} Selected Total
                             </span>
                             <div className="flex gap-2">
                                 <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg text-gray-600 font-bold hover:bg-gray-100 transition bg-white shadow-sm">Cancel</button>
@@ -260,7 +249,7 @@
                     const reader = new FileReader();
                     reader.onloadend = () => {
                         const result = reader.result;
-                        onLogoUpdate(result); 
+                        onLogoUpdate(result); // Sends to Shared DB
                     };
                     reader.readAsDataURL(file);
                 }
@@ -335,6 +324,7 @@
                         return { id: `Mock${i + 1}`, label: label };
                     });
                 } else if (isSharedStyle) {
+                    // Update Order: Assessment, Optionals, Improvement
                     finalCategories.push({id: "Assessment", label: "Assessment"});
                     if (selectedOptionals["HPL"]) finalCategories.push({id: "HPL", label: "Approaches to Learning"});
                     if (selectedOptionals["Language"]) finalCategories.push({id: "Language", label: "Language"});
@@ -720,6 +710,8 @@
                 setActionHistory(prev => prev.slice(0, -1));
             };
 
+            // SINGLE NEWLINE joining for copying, ensures they paste correctly to Word/Systems 
+            // without double gaps, allowing manual bulleting later.
             const handleCopy = () => {
                 if (activeComments.length === 0) return;
                 const clipboardText = activeComments.join("\n");
@@ -859,6 +851,7 @@
             const handleDownload = () => {
                 const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Class Reports</title></head><body>";
                 const footer = "</body></html>";
+                // Convert single newlines to HTML line breaks for word document so they format clearly
                 const htmlContent = prompt.replace(/\n/g, "<br>");
                 const sourceHTML = header + htmlContent + footer;
                 const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
