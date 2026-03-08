@@ -351,8 +351,15 @@
 
             const handleSaveSubjectLocal = (e) => {
                 e.preventDefault();
-                if (newSubjectName.trim()) {
-                    onAddSubject(newSubjectName.trim(), newSubjectType, department);
+                const name = newSubjectName.trim();
+                if (name) {
+                    // Force Unique Name
+                    const isDuplicate = subjectOptions.some(s => s.toLowerCase() === name.toLowerCase());
+                    if (isDuplicate) {
+                        alert(`The subject name "${name}" is already being used.\n\nTo ensure your comments are kept separate, please add the department or year group to the name.\n\nExample: "${name} (${department})"`);
+                        return;
+                    }
+                    onAddSubject(name, newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
                 }
@@ -368,7 +375,7 @@
 
                 const name = prompt("Enter name for new department:");
                 if (name && name.trim()) {
-                    if (departments.includes(name.trim())) {
+                    if (departments.some(d => d.toLowerCase() === name.trim().toLowerCase())) {
                         alert("Department already exists.");
                         return;
                     }
@@ -747,7 +754,6 @@
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">1. Select a category</h3>
                         <div className="flex flex-wrap gap-2 mb-2">
                             {categories.map(cat => {
-                                // SAFE HAS DATA CHECK: Prevents blank screen crash
                                 const textVal = classData[student]?.[cat.id] || "";
                                 const hasData = textVal.trim().length > 0;
                                 const isActive = activeTabId === cat.id;
@@ -1125,6 +1131,10 @@
                         customBank: updatedBank
                     }, { merge: true }).catch(console.error);
                  }
+            };
+
+            const updateCloud = (key, value) => {
+                SHARED_DOC_REF.set({ [key]: value }, { merge: true }).catch(console.error);
             };
 
             const handleUpdateMockTitle = (idx, val) => {
