@@ -116,22 +116,21 @@
             const [selected, setSelected] = useState([]);
             const [expandedDepts, setExpandedDepts] = useState([]);
             
+            // Only allow sharing with valid active subjects
             const availableSubjects = allSubjects.filter(s => s !== currentSubject);
             
-            // Group available subjects by department, ensuring it uses actual current department structure
+            // Group available subjects by department
             const subjectsByDept = {};
             availableSubjects.forEach(s => {
                 let dept = subjectDepartments[s] || "Other";
-                if (!departments.includes(dept)) dept = "Other"; // Fallback if dept got deleted but subject wasn't caught
-                
+                if (!departments.includes(dept)) dept = "Other"; 
                 if (!subjectsByDept[dept]) subjectsByDept[dept] = [];
                 subjectsByDept[dept].push(s);
             });
 
-            // Only show valid departments that actually have subjects in them
-            const validDepartments = Object.keys(subjectsByDept).sort();
+            // Show ALL active departments, even if empty, so users know they exist
+            const validDepartments = [...departments].sort();
 
-            // Default to expanding the current subject's department
             useEffect(() => {
                 const currentDept = subjectDepartments[currentSubject] || "Other";
                 if (validDepartments.includes(currentDept)) {
@@ -150,14 +149,14 @@
             };
 
             const toggleDeptSelection = (dept) => {
-                const deptSubjects = subjectsByDept[dept];
+                const deptSubjects = subjectsByDept[dept] || [];
+                if (deptSubjects.length === 0) return;
+
                 const allSelectedInDept = deptSubjects.every(s => selected.includes(s));
                 
                 if (allSelectedInDept) {
-                    // Deselect all in this dept
                     setSelected(selected.filter(s => !deptSubjects.includes(s)));
                 } else {
-                    // Select all in this dept
                     const newSelected = [...selected];
                     deptSubjects.forEach(s => {
                         if (!newSelected.includes(s)) newSelected.push(s);
@@ -184,51 +183,53 @@
                         <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
                             <p className="text-sm text-gray-600 mb-6">Select the subjects below to share your current <strong>{displayCat}</strong> comments and custom tabs with.</p>
                             
-                            {validDepartments.length === 0 ? (
-                                <p className="text-sm text-red-500 italic">No other subjects exist to share with.</p>
-                            ) : (
-                                <div className="space-y-4">
-                                    {validDepartments.map(dept => {
-                                        const deptSubjects = subjectsByDept[dept];
-                                        const isExpanded = expandedDepts.includes(dept);
-                                        const allSelected = deptSubjects.every(s => selected.includes(s));
-                                        
-                                        return (
-                                            <div key={dept} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                                                <div 
-                                                    className={`p-3 flex justify-between items-center cursor-pointer transition-colors ${isExpanded ? 'bg-blue-50 border-b border-blue-100' : 'bg-gray-50 hover:bg-gray-100'}`}
-                                                    onClick={() => toggleDeptExpand(dept)}
-                                                >
-                                                    <h3 className="font-bold text-school-blue flex items-center gap-2">
-                                                        <Briefcase className="w-4 h-4 text-school-lightBlue" /> {dept}
-                                                        <span className="text-xs font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border">
-                                                            {deptSubjects.filter(s => selected.includes(s)).length} / {deptSubjects.length}
-                                                        </span>
-                                                    </h3>
-                                                    {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
-                                                </div>
-                                                
-                                                {isExpanded && (
-                                                    <div className="p-3 bg-white space-y-2">
-                                                        <button 
-                                                            onClick={() => toggleDeptSelection(dept)}
-                                                            className="text-xs font-bold text-school-lightBlue hover:underline mb-2 block"
-                                                        >
-                                                            {allSelected ? "Deselect All in Department" : "Select All in Department"}
-                                                        </button>
-                                                        {deptSubjects.map(s => (
-                                                            <label key={s} className={`flex items-center gap-3 p-2 border rounded-md cursor-pointer transition-colors ${selected.includes(s) ? 'bg-blue-50 border-school-lightBlue' : 'bg-white hover:bg-gray-50'}`}>
-                                                                <input type="checkbox" checked={selected.includes(s)} onChange={() => toggleSubject(s)} className="w-4 h-4 text-school-lightBlue rounded focus:ring-school-lightBlue" />
-                                                                <span className={`font-medium text-sm ${selected.includes(s) ? 'text-school-blue' : 'text-gray-700'}`}>{s}</span>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                )}
+                            <div className="space-y-4">
+                                {validDepartments.map(dept => {
+                                    const deptSubjects = subjectsByDept[dept] || [];
+                                    const isExpanded = expandedDepts.includes(dept);
+                                    const allSelected = deptSubjects.length > 0 && deptSubjects.every(s => selected.includes(s));
+                                    
+                                    return (
+                                        <div key={dept} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                                            <div 
+                                                className={`p-3 flex justify-between items-center cursor-pointer transition-colors ${isExpanded ? 'bg-blue-50 border-b border-blue-100' : 'bg-gray-50 hover:bg-gray-100'}`}
+                                                onClick={() => toggleDeptExpand(dept)}
+                                            >
+                                                <h3 className="font-bold text-school-blue flex items-center gap-2">
+                                                    <Briefcase className="w-4 h-4 text-school-lightBlue" /> {dept}
+                                                    <span className="text-xs font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border">
+                                                        {deptSubjects.filter(s => selected.includes(s)).length} / {deptSubjects.length}
+                                                    </span>
+                                                </h3>
+                                                {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                                            
+                                            {isExpanded && (
+                                                <div className="p-3 bg-white space-y-2">
+                                                    {deptSubjects.length === 0 ? (
+                                                        <p className="text-xs text-gray-400 italic py-1">No other subjects in this department.</p>
+                                                    ) : (
+                                                        <>
+                                                            <button 
+                                                                onClick={() => toggleDeptSelection(dept)}
+                                                                className="text-xs font-bold text-school-lightBlue hover:underline mb-2 block"
+                                                            >
+                                                                {allSelected ? "Deselect All in Department" : "Select All in Department"}
+                                                            </button>
+                                                            {deptSubjects.map(s => (
+                                                                <label key={s} className={`flex items-center gap-3 p-2 border rounded-md cursor-pointer transition-colors ${selected.includes(s) ? 'bg-blue-50 border-school-lightBlue' : 'bg-white hover:bg-gray-50'}`}>
+                                                                    <input type="checkbox" checked={selected.includes(s)} onChange={() => toggleSubject(s)} className="w-4 h-4 text-school-lightBlue rounded focus:ring-school-lightBlue" />
+                                                                    <span className={`font-medium text-sm ${selected.includes(s) ? 'text-school-blue' : 'text-gray-700'}`}>{s}</span>
+                                                                </label>
+                                                            ))}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
@@ -354,7 +355,6 @@
 
             const handleSaveSubject = () => {
                 if (newSubjectName.trim()) {
-                    // Direct add without validation check to allow overwriting
                     onAddSubject(newSubjectName.trim(), newSubjectType, department);
                     setIsCreatingSubject(false);
                     setNewSubjectName("");
@@ -897,6 +897,7 @@
 
         const App = () => {
             const [customSubjects, setCustomSubjects] = useState([]);
+            const [deletedSubjects, setDeletedSubjects] = useState([]);
             const [subjectTypes, setSubjectTypes] = useState({});
             const [mockTitles, setMockTitles] = useState({});
             const [customBank, setCustomBank] = useState({});
@@ -923,6 +924,7 @@
                     if (doc.exists) {
                         const data = doc.data();
                         setCustomSubjects(data.customSubjects || []);
+                        setDeletedSubjects(data.deletedSubjects || []);
                         setSubjectTypes(data.subjectTypes || {});
                         setMockTitles(data.mockTitles || {});
                         setCustomBank(data.customBank || {});
@@ -936,8 +938,13 @@
                         SHARED_DOC_REF.get({ source: 'server' }).then(dbDoc => {
                             if (!dbDoc.exists) {
                                 SHARED_DOC_REF.set({
-                                    customSubjects: [], subjectTypes: {}, mockTitles: {}, customBank: {},
-                                    subjectDepartments: DEFAULT_SUBJECT_DEPARTMENTS, subjectSkills: {},
+                                    customSubjects: Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), 
+                                    deletedSubjects: [],
+                                    subjectTypes: {}, 
+                                    mockTitles: {}, 
+                                    customBank: DEFAULT_COMMENT_BANK,
+                                    subjectDepartments: DEFAULT_SUBJECT_DEPARTMENTS, 
+                                    subjectSkills: {},
                                     departments: ["Social Studies", "English", "Maths", "Science", "Languages", "Arts", "PE", "Technology", "Primary", "Other"],
                                     logo: null
                                 });
@@ -962,6 +969,9 @@
                     updatedSubjects.push(newSubject);
                 }
 
+                // If it was previously deleted, remove it from the deleted list so it comes back clean
+                let updatedDeleted = deletedSubjects.filter(s => s !== newSubject);
+
                 const updatedTypes = { ...subjectTypes, [newSubject]: type };
                 const updatedDepts = { ...subjectDepartments, [newSubject]: dept };
 
@@ -979,6 +989,7 @@
 
                 SHARED_DOC_REF.update({
                     customSubjects: updatedSubjects,
+                    deletedSubjects: updatedDeleted,
                     subjectTypes: updatedTypes,
                     subjectDepartments: updatedDepts,
                     customBank: newBank
@@ -991,6 +1002,10 @@
                 if (!subject || subject === "__NEW__") return;
                 if (confirm(`⚠️ Are you sure you want to PERMANENTLY delete the subject "${subject}"?`)) {
                     const updatedSubjects = customSubjects.filter(s => s !== subject);
+                    
+                    const newDeleted = [...deletedSubjects];
+                    if (!newDeleted.includes(subject)) newDeleted.push(subject);
+
                     const updatedTypes = { ...subjectTypes }; delete updatedTypes[subject];
                     const updatedMockTitles = { ...mockTitles }; delete updatedMockTitles[subject];
                     const updatedDepts = { ...subjectDepartments }; delete updatedDepts[subject];
@@ -1005,6 +1020,7 @@
 
                     SHARED_DOC_REF.update({ 
                         customSubjects: updatedSubjects, 
+                        deletedSubjects: newDeleted,
                         subjectTypes: updatedTypes, 
                         mockTitles: updatedMockTitles, 
                         subjectDepartments: updatedDepts, 
@@ -1027,18 +1043,49 @@
             };
 
             const handleDeleteDepartment = (deptToDelete) => {
-                 if (confirm(`Delete department "${deptToDelete}"? Any subjects in this department will be moved to "Other".`)) {
+                 if (confirm(`⚠️ DANGER: Delete department "${deptToDelete}"?\n\nThis will PERMANENTLY DELETE ALL SUBJECTS and comments inside this department.`)) {
                     const newDepts = departments.filter(d => d !== deptToDelete);
                     
-                    const updatedDepts = { ...subjectDepartments };
-                    Object.keys(updatedDepts).forEach(subj => {
-                        if (updatedDepts[subj] === deptToDelete) {
-                            updatedDepts[subj] = "Other";
-                        }
+                    let updatedSubjects = [...customSubjects];
+                    let newDeleted = [...deletedSubjects];
+                    let updatedTypes = { ...subjectTypes };
+                    let updatedMockTitles = { ...mockTitles };
+                    let updatedDepts = { ...subjectDepartments };
+                    let updatedSkills = { ...subjectSkills };
+                    let updatedBank = { ...customBank };
+
+                    // Find all subjects in this department and wipe them
+                    const subjectsInDept = allSubjectsList.filter(s => (subjectDepartments[s] || "Other") === deptToDelete);
+
+                    subjectsInDept.forEach(subj => {
+                        updatedSubjects = updatedSubjects.filter(s => s !== subj);
+                        if (!newDeleted.includes(subj)) newDeleted.push(subj);
+                        delete updatedTypes[subj];
+                        delete updatedMockTitles[subj];
+                        delete updatedDepts[subj];
+                        delete updatedSkills[subj];
+                        Object.keys(updatedBank).forEach(key => {
+                            if (key.startsWith(`${subj}::`)) {
+                                delete updatedBank[key];
+                            }
+                        });
                     });
 
-                    SHARED_DOC_REF.update({ departments: newDepts, subjectDepartments: updatedDepts });
-                    if(department === deptToDelete) setDepartment("");
+                    SHARED_DOC_REF.update({ 
+                        departments: newDepts,
+                        customSubjects: updatedSubjects,
+                        deletedSubjects: newDeleted,
+                        subjectTypes: updatedTypes,
+                        mockTitles: updatedMockTitles,
+                        subjectDepartments: updatedDepts,
+                        subjectSkills: updatedSkills,
+                        customBank: updatedBank
+                    });
+
+                    if(department === deptToDelete) {
+                        setDepartment("");
+                        setSubject("");
+                    }
                  }
             };
 
@@ -1280,7 +1327,9 @@
                 return text && text.trim().length > 0;
             }) : true;
 
-            const allSubjectsList = Object.keys(subjectDepartments);
+            // Compute valid active subjects (removes permanently deleted ones)
+            const allSubjectsList = Array.from(new Set([...Object.keys(DEFAULT_SUBJECT_DEPARTMENTS), ...customSubjects]))
+                .filter(s => !deletedSubjects.includes(s));
 
             return (
                 <div className="min-h-screen bg-gray-50 pb-32">
