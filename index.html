@@ -129,15 +129,16 @@
             // Show ALL active departments, even if empty
             const validDepartments = [...departments].sort();
 
-            // Default to expanding the current subject's department
+            // Default to expanding the current subject's department ONCE when opened
             useEffect(() => {
                 const currentDept = subjectDepartments[currentSubject] || "Other";
-                if (validDepartments.includes(currentDept)) {
+                if (departments.includes(currentDept)) {
                     setSelectedDept(currentDept);
-                } else if (validDepartments.length > 0) {
-                    setSelectedDept(validDepartments[0]);
+                } else if (departments.length > 0) {
+                    setSelectedDept(departments[0]);
                 }
-            }, [currentSubject, subjectDepartments, validDepartments]);
+                // eslint-disable-next-line react-hooks/exhaustive-deps
+            }, [currentSubject]); // Removed other dependencies to prevent reset loop
 
             const displayedSubjects = selectedDept ? (subjectsByDept[selectedDept] || []) : [];
             const isAllDisplayedSelected = displayedSubjects.length > 0 && displayedSubjects.every(s => selected.includes(s));
@@ -957,6 +958,10 @@
                 });
                 return () => unsubscribe();
             }, []);
+
+            const updateCloud = (key, value) => {
+                SHARED_DOC_REF.set({ [key]: value }, { merge: true }).catch(console.error);
+            };
 
             const handleAddSubject = (newSubject, type, dept) => {
                 let updatedSubjects = [...customSubjects];
